@@ -1,38 +1,6 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>GoldenVow – Create Event</title>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <style>
-        body { background: #FEFCF3; font-family: 'Georgia', serif; }
-        .golden { color: #D4AF37; }
-        .navbar-brand { font-size: 1.8rem; font-weight: bold; color: #1A2A3A; }
-        .navbar-brand span { color: #D4AF37; }
-        .btn-gold { background: #D4AF37; border: none; color: #1A2A3A; font-weight: bold; }
-        .btn-gold:hover { background: #C5A02E; color: #1A2A3A; }
-        .card { border: none; box-shadow: 0 5px 20px rgba(0,0,0,0.05); border-radius: 15px; }
-        .form-label { font-weight: bold; font-size: 0.9rem; color: #1A2A3A; }
-        .section-title { font-size: 1.1rem; font-weight: bold; color: #1A2A3A; border-bottom: 2px solid #D4AF37; padding-bottom: 8px; margin-bottom: 15px; }
-        .form-control, .form-select { border: 1px solid #D4AF37; border-radius: 10px; }
-        .form-control:focus, .form-select:focus { border-color: #C5A02E; box-shadow: 0 0 0 0.2rem rgba(212,175,55,0.25); }
-    </style>
-</head>
-<body>
-<nav class="navbar navbar-light bg-white border-bottom">
-    <div class="container">
-        <a href="/" class="navbar-brand d-flex align-items-center">
-            <span style="width:40px; height:40px; margin-right:10px;">{{ app_logo|safe }}</span>
-            <div>
-                <span style="font-size:1.8rem; font-weight:bold; color:#1A2A3A;">Golden<span style="color:#D4AF37;">Vow</span></span>
-                <span style="font-size:0.7rem; color:#6c757d; display:block; letter-spacing:2px;"><em>Tunza Mila</em></span>
-            </div>
-        </a>
-        <a href="/admin" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i> Back</a>
-    </div>
-</nav>
+{% extends "base.html" %}
+{% block title %}Create Event – GoldenVow{% endblock %}
+{% block content %}
 <div class="container mt-4" style="max-width:700px;">
     <h4 class="mb-3"><i class="bi bi-plus-circle golden me-2"></i> Create New Event</h4>
     <form method="post">
@@ -87,5 +55,10 @@
         </div>
     </form>
 </div>
-</body>
-</html>
+<style>
+.section-title { font-size: 1.1rem; font-weight: bold; color: var(--text-primary); border-bottom: 2px solid var(--gold); padding-bottom: 8px; margin-bottom: 15px; }
+.form-label { font-weight: bold; font-size: 0.9rem; color: var(--text-primary); }
+.form-control, .form-select { border: 1px solid var(--border-color); border-radius: 10px; }
+.form-control:focus, .form-select:focus { border-color: var(--gold); box-shadow: 0 0 0 0.2rem rgba(212,175,55,0.25); }
+</style>
+{% endblock %}

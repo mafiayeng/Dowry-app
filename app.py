@@ -26,7 +26,7 @@ MAINTENANCE_MODE = os.environ.get('MAINTENANCE_MODE', 'False') == 'True'
 SUPPORT_WHATSAPP = os.environ.get('SUPPORT_WHATSAPP', '254737349468')
 SUPPORT_EMAIL = os.environ.get('SUPPORT_EMAIL', 'support@goldenvow.com')
 
-# ---------- EMAIL (Placeholder – Enable Later) ----------
+# ---------- EMAIL / SMS (Disabled by default) ----------
 def send_email_notification(subject, message, to=None):
     print(f"[EMAIL DISABLED] To: {to} | Subject: {subject} | Message: {message}")
     return True
@@ -163,8 +163,13 @@ class PasswordReset(db.Model):
     used = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+# ---------- CREATE TABLES SAFETY ----------
 with app.app_context():
-    db.create_all()
+    try:
+        db.create_all()
+        print("✅ Database tables created/verified.")
+    except Exception as e:
+        print(f"⚠️ Database init warning: {e}")
 
 # ---------- HELPERS ----------
 def is_admin_logged_in():
@@ -322,6 +327,25 @@ def get_page_lock_status(event):
         return True
     return False
 
+# ---------- CONTEXT PROCESSORS (GLOBAL TEMPLATE VARS) ----------
+@app.context_processor
+def utility_processor():
+    return dict(
+        app_logo=get_app_logo(),
+        get_app_logo=get_app_logo,
+        get_fee_percentage=get_fee_percentage,
+        get_event_total_contributions=get_event_total_contributions,
+        get_page_lock_status=get_page_lock_status,
+        generate_event_logo=generate_event_logo,
+        get_unread_notifications=get_unread_notifications,
+        is_admin_logged_in=is_admin_logged_in,
+        get_admin=get_admin,
+        support_whatsapp=SUPPORT_WHATSAPP,
+        support_email=SUPPORT_EMAIL,
+        fee_percentage=SERVICE_FEE_PERCENTAGE,
+        now=datetime.utcnow
+    )
+
 # ---------- ROUTES ----------
 @app.before_request
 def check_maintenance():
@@ -466,8 +490,7 @@ def contact():
             create_notification(super_admin.id, f"📩 New contact message from {name}: {subject}", 'contact')
         flash('✅ Your message has been sent. We will get back to you soon!', 'success')
         return redirect(url_for('contact'))
-    app_logo = get_app_logo(40)
-    return render_template('contact.html', app_logo=app_logo)
+    return render_template('contact.html')
 
 # ---------- ADMIN ----------
 @app.route('/admin')
@@ -478,9 +501,7 @@ def admin_dashboard():
     admin.last_action = datetime.utcnow()
     db.session.commit()
     events = Event.query.filter_by(admin_id=admin.id).order_by(desc(Event.created_at)).all()
-    unread = get_unread_notifications(admin.id)
-    app_logo = get_app_logo(40)
-    return render_template('admin_dashboard.html', admin=admin, events=events, unread=unread, app_logo=app_logo, support_whatsapp=SUPPORT_WHATSAPP, support_email=SUPPORT_EMAIL)
+    return render_template('admin_dashboard.html', admin=admin, events=events)
 
 @app.route('/admin/create', methods=['GET', 'POST'])
 def admin_create_event():
@@ -529,8 +550,7 @@ def admin_create_event():
         db.session.commit()
         flash(f'✅ "{title}" created!', 'success')
         return redirect(url_for('admin_view_event', event_id=event.id))
-    app_logo = get_app_logo(40)
-    return render_template('admin_create.html', app_logo=app_logo)
+    return render_template('admin_create.html')
 
 @app.route('/admin/event/<int:event_id>')
 def admin_view_event(event_id):
@@ -551,18 +571,13 @@ def admin_view_event(event_id):
     is_locked = get_page_lock_status(event)
     messages = ChatMessage.query.filter_by(event_id=event.id).order_by(ChatMessage.timestamp).all()
     logo_svg = generate_event_logo(event, 100)
-    app_logo = get_app_logo(40)
-    unread = get_unread_notifications(admin.id)
     return render_template('admin_event.html',
                          admin=admin, event=event, contributors=contributors,
                          total_contributions=total_contributions,
                          total_fees=total_fees, total_paid=total_paid,
                          pending_count=pending_count, fee_due=fee_due,
                          is_locked=is_locked, messages=messages,
-                         logo_svg=logo_svg, app_logo=app_logo,
-                         unread=unread,
-                         support_whatsapp=SUPPORT_WHATSAPP,
-                         support_email=SUPPORT_EMAIL)
+                         logo_svg=logo_svg)
 
 @app.route('/admin/update_contributor/<int:contrib_id>', methods=['POST'])
 def admin_update_contributor(contrib_id):
@@ -690,8 +705,7 @@ def view_notifications():
     notifications = Notification.query.filter_by(admin_id=admin.id).order_by(desc(Notification.created_at)).all()
     Notification.query.filter_by(admin_id=admin.id, is_read=False).update({'is_read': True})
     db.session.commit()
-    app_logo = get_app_logo(40)
-    return render_template('notifications.html', admin=admin, notifications=notifications, app_logo=app_logo)
+    return render_template('notifications.html', admin=admin, notifications=notifications)
 
 # ---------- PUBLIC ----------
 @app.route('/e/<token>')
@@ -710,7 +724,6 @@ def public_event(token):
     daily_note = get_daily_note(event.event_type, day)
     is_locked = get_page_lock_status(event)
     logo_svg = generate_event_logo(event, 80)
-    app_logo = get_app_logo(40)
     contributor = None
     can_download_weekly = False
     next_available = None
@@ -732,16 +745,12 @@ def public_event(token):
     return render_template('public_event.html',
                          event=event, contributors=contributors, messages=messages,
                          daily_note=daily_note, is_locked=is_locked,
-                         logo_svg=logo_svg, app_logo=app_logo,
-                         fee_percentage=SERVICE_FEE_PERCENTAGE,
-                         current_time=datetime.utcnow(),
+                         logo_svg=logo_svg,
                          contributor=contributor,
                          can_download_weekly=can_download_weekly,
                          next_available_date=next_available,
                          weekly_total=weekly_total,
-                         total_raised=total_raised,
-                         support_whatsapp=SUPPORT_WHATSAPP,
-                         support_email=SUPPORT_EMAIL)
+                         total_raised=total_raised)
 
 @app.route('/join/<token>')
 def event_landing(token):
@@ -749,8 +758,7 @@ def event_landing(token):
     if event.disabled:
         return render_template('event_disabled.html', event=event)
     logo_svg = generate_event_logo(event, 80)
-    app_logo = get_app_logo(40)
-    return render_template('event_landing.html', event=event, logo_svg=logo_svg, app_logo=app_logo)
+    return render_template('event_landing.html', event=event, logo_svg=logo_svg)
 
 @app.route('/api/pledge/<token>', methods=['POST'])
 def api_pledge(token):
@@ -852,6 +860,7 @@ def weekly_receipt(token):
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
+    # (same PDF generation as early receipt)
     c.setFillColorRGB(1,1,1); c.rect(0,0,width,height,fill=1)
     c.setStrokeColorRGB(0.83,0.69,0.22); c.setLineWidth(3); c.rect(40,40,width-80,height-80)
     c.setFillColorRGB(0.83,0.69,0.22); c.setFont("Helvetica-Bold", 24); c.drawString(200, height-80, "✦ GOLDENVOW ✦")
@@ -886,10 +895,9 @@ def weekly_receipt(token):
 
 @app.route('/about')
 def about():
-    app_logo = get_app_logo(40)
-    return render_template('about.html', app_logo=app_logo, support_whatsapp=SUPPORT_WHATSAPP, support_email=SUPPORT_EMAIL)
+    return render_template('about.html')
 
-# ---------- PENDING CHECK ----------
+# ---------- PENDING CHECK (CRON) ----------
 @app.route('/check-pending')
 def check_pending():
     secret = request.args.get('secret')
@@ -944,14 +952,12 @@ def super_admin_dashboard():
     total_contributions = db.session.query(func.sum(Contributor.pledge_amount)).scalar() or 0
     total_fees = db.session.query(func.sum(Contributor.fee_amount)).scalar() or 0
     withdrawals = Withdrawal.query.order_by(desc(Withdrawal.created_at)).all()
-    app_logo = get_app_logo(40)
     return render_template('super_admin.html',
                          admin=admin, admins=all_admins, all_events=all_events,
                          total_events=total_events, total_contributors=total_contributors,
                          total_contributions=total_contributions, total_fees=total_fees,
-                         maintenance_mode=MAINTENANCE_MODE, app_logo=app_logo,
-                         withdrawals=withdrawals, contact_messages=contact_messages,
-                         support_whatsapp=SUPPORT_WHATSAPP, support_email=SUPPORT_EMAIL)
+                         maintenance_mode=MAINTENANCE_MODE,
+                         withdrawals=withdrawals, contact_messages=contact_messages)
 
 @app.route('/superadmin/remove_admin/<int:admin_id>', methods=['POST'])
 def superadmin_remove_admin(admin_id):

@@ -1,0 +1,242 @@
+/* ===== CSS VARIABLES ===== */
+:root {
+    --bg-primary: #FEFCF3;
+    --bg-secondary: #FFFFFF;
+    --bg-card: #FFFFFF;
+    --bg-navbar: rgba(255, 255, 255, 0.85);
+    --text-primary: #1A2A3A;
+    --text-secondary: #6c757d;
+    --text-muted: #8a9aa8;
+    --border-color: rgba(212, 175, 55, 0.2);
+    --shadow: 0 5px 20px rgba(0,0,0,0.05);
+    --shadow-hover: 0 8px 30px rgba(0,0,0,0.08);
+    --input-bg: #ffffff;
+    --input-border: #D4AF37;
+    --gold: #D4AF37;
+    --gold-hover: #C5A02E;
+    --gold-gradient: linear-gradient(90deg, #D4AF37, #C5A02E);
+    --danger: #C62828;
+    --success: #2E7D32;
+    --navbar-blur: blur(12px);
+    --card-radius: 24px;
+    --font-family: 'Georgia', serif;
+    --transition: 0.3s ease;
+}
+
+[data-theme="dark"] {
+    --bg-primary: #121212;
+    --bg-secondary: #1E1E1E;
+    --bg-card: #252525;
+    --bg-navbar: rgba(30, 30, 30, 0.9);
+    --text-primary: #E8E8E8;
+    --text-secondary: #A0A0A0;
+    --text-muted: #6c7a8a;
+    --border-color: rgba(212, 175, 55, 0.15);
+    --shadow: 0 5px 20px rgba(0,0,0,0.4);
+    --shadow-hover: 0 8px 30px rgba(0,0,0,0.6);
+    --input-bg: #2C2C2C;
+    --input-border: #B8962C;
+    --gold: #D4AF37;
+    --gold-hover: #E5C54A;
+    --navbar-blur: blur(16px);
+}
+
+/* ===== GLOBAL RESET & BODY ===== */
+body {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: var(--font-family);
+    transition: background var(--transition), color var(--transition);
+    min-height: 100vh;
+}
+
+/* ===== FONTS & HEADINGS ===== */
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Georgia', serif;
+    color: var(--text-primary);
+}
+.golden { color: var(--gold); }
+a { color: var(--gold); text-decoration: none; }
+a:hover { color: var(--gold-hover); }
+
+/* ===== BUTTONS ===== */
+.btn-gold {
+    background: var(--gold);
+    border: none;
+    color: #1A2A3A;
+    font-weight: bold;
+    padding: 12px 30px;
+    border-radius: 60px;
+    transition: var(--transition);
+}
+.btn-gold:hover {
+    background: var(--gold-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(212, 175, 55, 0.3);
+}
+.btn-outline-gold {
+    background: transparent;
+    border: 2px solid var(--gold);
+    color: var(--gold);
+    font-weight: bold;
+    padding: 12px 30px;
+    border-radius: 60px;
+    transition: var(--transition);
+}
+.btn-outline-gold:hover {
+    background: var(--gold);
+    color: #1A2A3A;
+    transform: translateY(-2px);
+}
+
+/* ===== CARDS ===== */
+.card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--card-radius);
+    box-shadow: var(--shadow);
+    transition: var(--transition);
+}
+.card:hover {
+    box-shadow: var(--shadow-hover);
+}
+
+/* ===== NAVBAR ===== */
+.custom-navbar {
+    background: var(--bg-navbar);
+    backdrop-filter: var(--navbar-blur);
+    border-bottom: 1px solid var(--border-color);
+    padding: 12px 0;
+}
+.custom-navbar .brand-name {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: var(--text-primary);
+}
+.custom-navbar .brand-name span { color: var(--gold); }
+.custom-navbar .brand-sub {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    letter-spacing: 2px;
+    display: block;
+}
+
+/* ===== THEME TOGGLE ===== */
+.theme-toggle {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 60px;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-size: 1.2rem;
+    transition: var(--transition);
+    color: var(--text-primary);
+}
+.theme-toggle:hover {
+    border-color: var(--gold);
+    background: var(--gold);
+    color: #1A2A3A;
+}
+
+/* ===== LOGIN / REGISTER GLASS CARD ===== */
+.glass-card {
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 40px;
+    padding: 50px 40px;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.5);
+    transition: var(--transition);
+}
+[data-theme="dark"] .glass-card {
+    background: rgba(20, 20, 20, 0.7);
+    border-color: rgba(255, 255, 255, 0.05);
+}
+.glass-card:hover { transform: translateY(-5px); }
+
+/* ===== FORM CONTROLS ===== */
+.form-control {
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    border-radius: 60px;
+    padding: 12px 20px;
+    transition: var(--transition);
+}
+.form-control:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 0.2rem rgba(212, 175, 55, 0.25);
+    background: var(--input-bg);
+    color: var(--text-primary);
+}
+
+/* ===== PROGRESS BAR ===== */
+.progress-custom {
+    height: 20px;
+    border-radius: 10px;
+    background: var(--bg-secondary);
+    overflow: hidden;
+}
+.progress-custom .progress-bar {
+    background: var(--gold-gradient);
+    border-radius: 10px;
+    transition: width 0.6s ease;
+}
+
+/* ===== CHAT BOX ===== */
+.chat-box {
+    height: 200px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 10px;
+    background: var(--bg-secondary);
+}
+.chat-bubble {
+    background: var(--bg-primary);
+    padding: 8px 14px;
+    border-radius: 15px;
+    margin-bottom: 6px;
+    display: inline-block;
+    max-width: 80%;
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+.chat-bubble.self {
+    background: var(--gold);
+    color: #1A2A3A;
+    margin-left: auto;
+}
+
+/* ===== BACKGROUND ANIMATION (LOGIN) ===== */
+.bg-animation {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
+}
+.bg-circle {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(212, 175, 55, 0.05);
+    animation: float 20s infinite ease-in-out;
+}
+.bg-circle:nth-child(1) { width: 400px; height: 400px; top: -100px; left: -100px; }
+.bg-circle:nth-child(2) { width: 300px; height: 300px; bottom: -50px; right: -50px; animation-delay: -7s; }
+.bg-circle:nth-child(3) { width: 200px; height: 200px; top: 50%; left: 50%; animation-delay: -14s; }
+@keyframes float {
+    0% { transform: translate(0, 0) scale(1); opacity: 0.3; }
+    33% { transform: translate(30px, -30px) scale(1.1); opacity: 0.6; }
+    66% { transform: translate(-20px, 20px) scale(0.9); opacity: 0.4; }
+    100% { transform: translate(0, 0) scale(1); opacity: 0.3; }
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 576px) {
+    .glass-card { padding: 30px 20px; }
+    .custom-navbar .brand-name { font-size: 1.4rem; }
+}

@@ -2,9 +2,47 @@
 {% block title %}{{ event.title }} – GoldenVow{% endblock %}
 {% block head %}
 <style>
-    body { background-image: url('{{ event.background_image_url }}'); background-size: cover; background-attachment: fixed; background-position: center; background-blend-mode: overlay; background-color: rgba(0,0,0,0.3); }
-    .event-content { background: rgba(255,255,255,0.85); backdrop-filter: blur(10px); padding: 20px; border-radius: 20px; margin-top: 20px; }
-    [data-theme="dark"] .event-content { background: rgba(30,26,22,0.85); }
+    body {
+        background-image: url('{{ event.background_image_url }}');
+        background-size: cover;
+        background-attachment: fixed;
+        background-position: center;
+        background-blend-mode: overlay;
+        background-color: rgba(0,0,0,0.3);
+    }
+    .event-content {
+        background: rgba(255,255,255,0.85);
+        backdrop-filter: blur(10px);
+        padding: 20px;
+        border-radius: 20px;
+        margin-top: 20px;
+        margin-bottom: 20px;
+    }
+    [data-theme="dark"] .event-content {
+        background: rgba(21, 26, 36, 0.85);
+    }
+    .tunza-badge {
+        background: #D4AF37;
+        color: #1A2A3A;
+        font-weight: 700;
+        padding: 8px 24px;
+        border-radius: 40px;
+        letter-spacing: 2px;
+        font-size: 0.9rem;
+        display: inline-block;
+        box-shadow: 0 4px 15px rgba(212,175,55,0.3);
+    }
+    .contributor-card {
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 12px 16px;
+        transition: 0.3s;
+        background: var(--bg-card);
+    }
+    .contributor-card:hover {
+        border-color: var(--gold);
+        transform: translateY(-2px);
+    }
 </style>
 {% endblock %}
 {% block content %}
@@ -13,38 +51,75 @@
         <div style="width:80px; height:80px; margin:0 auto;">{{ logo_svg|safe }}</div>
         <h2 class="mt-2">{{ event.title }}</h2>
         <p class="text-muted">{{ event.description }}</p>
+
+        <!-- ✅ "Tunza Mila" badge ONLY for dowry -->
+        {% if event.event_type == 'dowry' %}
+        <div style="margin-top: 10px;">
+            <span class="tunza-badge">✦ Tunza Mila ✦</span>
+        </div>
+        {% endif %}
+
         <p class="mt-2"><strong>🎯 Goal:</strong> KES {{ event.target_amount|round(0) }}</p>
         <span class="badge bg-light text-muted">{{ event.event_type|capitalize }}</span>
         {% if is_locked %}<span class="badge bg-danger"><i class="bi bi-lock"></i> Locked</span>{% endif %}
     </div>
+
+    <!-- Progress Bar -->
     {% if event.target_amount > 0 %}
     <div class="mt-3">
         {% set percentage = (total_raised / event.target_amount * 100)|round(0) if event.target_amount > 0 else 0 %}
-        <div class="d-flex justify-content-between small text-muted"><span>Progress</span><span>{{ percentage }}%</span></div>
-        <div class="progress-custom"><div class="progress-bar" role="progressbar" style="width: {{ percentage }}%;" aria-valuenow="{{ percentage }}" aria-valuemin="0" aria-valuemax="100">{{ percentage }}%</div></div>
+        <div class="d-flex justify-content-between small text-muted">
+            <span>Progress</span>
+            <span>{{ percentage }}%</span>
+        </div>
+        <div class="progress-custom">
+            <div class="progress-bar" role="progressbar" style="width: {{ percentage }}%;" aria-valuenow="{{ percentage }}" aria-valuemin="0" aria-valuemax="100">
+                {{ percentage }}%
+            </div>
+        </div>
     </div>
     {% endif %}
-    <div class="text-center mt-2"><span class="support-badge"><i class="bi bi-headset golden"></i> Need help? <a href="https://wa.me/{{ support_whatsapp }}" target="_blank" class="text-success"><i class="bi bi-whatsapp"></i> WhatsApp</a> or <a href="mailto:{{ support_email }}" class="text-secondary"><i class="bi bi-envelope"></i> Email</a></span></div>
-    <div class="note-card my-3"><p class="golden-text"><i class="bi bi-feather"></i> Today's Note</p><p class="mb-0" style="font-style:italic;">"{{ daily_note }}"</p></div>
+
+    <div class="text-center mt-2">
+        <span class="support-badge"><i class="bi bi-headset golden"></i> Need help? <a href="https://wa.me/{{ support_whatsapp }}" target="_blank" class="text-success"><i class="bi bi-whatsapp"></i> WhatsApp</a> or <a href="mailto:{{ support_email }}" class="text-secondary"><i class="bi bi-envelope"></i> Email</a></span>
+    </div>
+
+    <div class="note-card my-3">
+        <p class="golden-text"><i class="bi bi-feather"></i> Today's Note</p>
+        <p class="mb-0" style="font-style:italic;">"{{ daily_note }}"</p>
+    </div>
+
     <div class="row text-center my-3">
         <div class="col-6"><div class="card p-2"><small class="text-muted">Current Time</small><strong id="currentTime">{{ now.strftime('%H:%M:%S') }}</strong></div></div>
         <div class="col-6"><div class="card p-2"><small class="text-muted">Time Left</small><strong class="countdown" id="countdown"></strong></div></div>
     </div>
+
     {% if is_locked %}
-    <div class="locked-overlay"><div class="icon"><i class="bi bi-lock" style="font-size:4rem; color:#C62828;"></i></div><h3 class="text-white">This Event is Currently Locked</h3><p class="text-muted">The event organizer has not yet confirmed the platform service fee.</p>{% if event.whatsapp_contact %}<a href="https://wa.me/{{ event.whatsapp_contact }}" target="_blank" class="btn btn-gold mt-3"><i class="bi bi-whatsapp"></i> Contact Organizer</a>{% endif %}</div>
+    <div class="locked-overlay">
+        <div class="icon"><i class="bi bi-lock" style="font-size:4rem; color:#C62828;"></i></div>
+        <h3 class="text-white">This Event is Currently Locked</h3>
+        <p class="text-muted">The event organizer has not yet confirmed the platform service fee.</p>
+        {% if event.whatsapp_contact %}<a href="https://wa.me/{{ event.whatsapp_contact }}" target="_blank" class="btn btn-gold mt-3"><i class="bi bi-whatsapp"></i> Contact Organizer</a>{% endif %}
+    </div>
     {% else %}
+    <!-- Pledge Form -->
     <div class="card p-4 my-3">
         <h5><i class="bi bi-hand-thumbs-up golden"></i> Make a Pledge</h5>
         <div class="fee-breakdown my-2"><small><i class="bi bi-info-circle"></i> A {{ fee_percentage }}% service fee is deducted from each contribution.</small></div>
         <form id="pledgeForm">
             <div class="mb-2"><input class="form-control" name="name" placeholder="Your Full Name" required></div>
             <div class="mb-2"><input class="form-control" name="phone" placeholder="Phone Number" required></div>
-            <div class="mb-2"><input class="form-control" name="amount" type="number" step="0.01" placeholder="Amount (KES)" id="pledgeAmount" required><div class="form-text text-muted small mt-1"><i class="bi bi-info-circle"></i> Minimum pledge is <strong>KES 50</strong> (so the 2% service fee is at least KES 1).</div></div>
+            <div class="mb-2">
+                <input class="form-control" name="amount" type="number" step="0.01" placeholder="Amount (KES)" id="pledgeAmount" required>
+                <div class="form-text text-muted small mt-1"><i class="bi bi-info-circle"></i> Minimum pledge is <strong>KES 50</strong> (so the 2% service fee is at least KES 1).</div>
+            </div>
             <div id="feePreview" class="mb-2 text-muted small"></div>
             <button type="submit" class="btn btn-gold w-100"><i class="bi bi-send"></i> Submit Pledge</button>
         </form>
         <div id="pledgeResponse" class="mt-2"></div>
     </div>
+
+    <!-- Payment Instructions -->
     <div class="card p-3 my-3">
         <h6><i class="bi bi-credit-card golden"></i> Payment Instructions</h6>
         {% if event.paybill %}<div class="payment-detail"><strong>Paybill:</strong> {{ event.paybill }}</div>{% endif %}
@@ -54,46 +129,81 @@
         {% if event.payment_instructions %}<div class="payment-detail">{{ event.payment_instructions }}</div>{% endif %}
         {% if not event.paybill and not event.mpesa_number and not event.till_number and not event.bank_name %}<p class="text-muted">Payment details will be shared by the organizer.</p>{% endif %}
     </div>
+
+    <!-- My Contributions -->
     {% if contributor %}
     <div class="card p-3 my-3 border border-success">
         <h6><i class="bi bi-receipt golden"></i> My Contributions</h6>
-        <div class="row"><div class="col-6"><strong>Total Pledged:</strong> KES {{ contributor.pledge_amount|round(2) }}</div><div class="col-6"><strong>Total Paid:</strong> KES {{ contributor.paid_amount|round(2) }}</div></div>
-        <div class="row mt-2"><div class="col-6"><strong>Remaining:</strong> <span class="your-remaining">KES {{ (contributor.pledge_amount - contributor.paid_amount)|round(2) }}</span></div><div class="col-6"><strong>Weekly Total:</strong> KES {{ weekly_total|round(2) }}</div></div>
-        <div class="mt-2">{% if can_download_weekly %}<button class="btn btn-gold w-100" onclick="downloadWeeklyReceipt('{{ contributor.token }}')"><i class="bi bi-download"></i> Download Weekly Receipt</button>{% else %}<button class="btn btn-secondary w-100" disabled><i class="bi bi-clock"></i> Available {{ next_available_date.strftime('%d %b %Y') }}</button>{% endif %}</div>
+        <div class="row">
+            <div class="col-6"><strong>Total Pledged:</strong> KES {{ contributor.pledge_amount|round(2) }}</div>
+            <div class="col-6"><strong>Total Paid:</strong> KES {{ contributor.paid_amount|round(2) }}</div>
+        </div>
+        <div class="row mt-2">
+            <div class="col-6"><strong>Remaining:</strong> <span class="your-remaining">KES {{ (contributor.pledge_amount - contributor.paid_amount)|round(2) }}</span></div>
+            <div class="col-6"><strong>Weekly Total:</strong> KES {{ weekly_total|round(2) }}</div>
+        </div>
+        <div class="mt-2">
+            {% if can_download_weekly %}
+            <button class="btn btn-gold w-100" onclick="downloadWeeklyReceipt('{{ contributor.token }}')"><i class="bi bi-download"></i> Download Weekly Receipt</button>
+            {% else %}
+            <button class="btn btn-secondary w-100" disabled><i class="bi bi-clock"></i> Available {{ next_available_date.strftime('%d %b %Y') }}</button>
+            {% endif %}
+        </div>
     </div>
     {% endif %}
+
+    <!-- Contributors List -->
     <h5 class="mt-3"><i class="bi bi-people golden"></i> Contributors (Amounts Contributed)</h5>
-    <div class="row">{% for c in contributors %}<div class="col-md-6 mb-2"><div class="contributor-card d-flex justify-content-between align-items-center"><span>{{ c.name }}</span><span><span class="contrib-amount">KES {{ c.net_contribution|round(2) }}</span><span class="badge bg-{% if c.status=='completed' or c.status=='approved' %}success{% else %}warning{% endif %} ms-1">{{ c.status }}</span></span></div></div>{% else %}<p class="text-muted">No contributors yet.</p>{% endfor %}</div>
+    <div class="row">
+        {% for c in contributors %}
+        <div class="col-md-6 mb-2">
+            <div class="contributor-card d-flex justify-content-between align-items-center">
+                <span>{{ c.name }}</span>
+                <span>
+                    <span class="contrib-amount">KES {{ c.net_contribution|round(2) }}</span>
+                    <span class="badge bg-{% if c.status=='completed' or c.status=='approved' %}success{% else %}warning{% endif %} ms-1">{{ c.status }}</span>
+                </span>
+            </div>
+        </div>
+        {% else %}
+        <p class="text-muted">No contributors yet.</p>
+        {% endfor %}
+    </div>
+
+    <!-- Chat -->
     <h5 class="mt-4"><i class="bi bi-chat-dots golden"></i> Chat</h5>
-    <div class="chat-box" id="chatBox">{% for m in messages %}<div class="d-flex {% if m.sender_type == 'admin' %}justify-content-end{% endif %}"><div class="chat-bubble {% if m.sender_type == 'admin' %}self{% endif %}"><strong>{{ m.sender_name }}</strong><br>{{ m.message }}<div class="text-muted" style="font-size:0.6rem;">{{ m.timestamp.strftime('%H:%M') }}</div></div></div>{% endfor %}</div>
-    <div class="input-group mt-2"><input type="text" id="chatName" class="form-control form-control-sm" placeholder="Your Name" style="max-width:120px;"><input type="text" id="chatInput" class="form-control form-control-sm" placeholder="Message..."><button class="btn btn-gold btn-sm" onclick="sendChat()"><i class="bi bi-send"></i></button></div>
+    <div class="chat-box" id="chatBox">
+        {% for m in messages %}
+        <div class="d-flex {% if m.sender_type == 'admin' %}justify-content-end{% endif %}">
+            <div class="chat-bubble {% if m.sender_type == 'admin' %}self{% endif %}">
+                <strong>{{ m.sender_name }}</strong><br>
+                {{ m.message }}
+                <div class="text-muted" style="font-size:0.6rem;">{{ m.timestamp.strftime('%H:%M') }}</div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    <div class="input-group mt-2">
+        <input type="text" id="chatName" class="form-control form-control-sm" placeholder="Your Name" style="max-width:120px;">
+        <input type="text" id="chatInput" class="form-control form-control-sm" placeholder="Message...">
+        <button class="btn btn-gold btn-sm" onclick="sendChat()"><i class="bi bi-send"></i></button>
+    </div>
     {% endif %}
 </div>
+
 <script>
+// (all JavaScript remains unchanged – it's exactly the same as before)
 const eventDate = new Date("{{ event.event_date.isoformat() }}").getTime();
-function updateCountdown(){const now=Date.now();const diff=eventDate-now;if(diff<=0){document.getElementById('countdown').innerHTML="🎉 Today!";return;}const d=Math.floor(diff/(1000*60*60*24));const h=Math.floor((diff%(1000*60*60*24))/(1000*60*60));const m=Math.floor((diff%(1000*60*60))/(1000*60));const s=Math.floor((diff%(1000*60))/1000);document.getElementById('countdown').innerHTML=`${d}d ${h}h ${m}m ${s}s`;}
-setInterval(updateCountdown,1000);updateCountdown();
-function updateTime(){const now=new Date();document.getElementById('currentTime').textContent=now.toTimeString().slice(0,8);}
-setInterval(updateTime,1000);updateTime();
+function updateCountdown(){ const now=Date.now(); const diff=eventDate-now; if(diff<=0){ document.getElementById('countdown').innerHTML="🎉 Today!"; return; } const d=Math.floor(diff/(1000*60*60*24)); const h=Math.floor((diff%(1000*60*60*24))/(1000*60*60)); const m=Math.floor((diff%(1000*60*60))/(1000*60)); const s=Math.floor((diff%(1000*60))/1000); document.getElementById('countdown').innerHTML=`${d}d ${h}h ${m}m ${s}s`; }
+setInterval(updateCountdown,1000); updateCountdown();
+function updateTime(){ const now=new Date(); document.getElementById('currentTime').textContent=now.toTimeString().slice(0,8); }
+setInterval(updateTime,1000); updateTime();
 const feePercentage={{ fee_percentage }};
-document.getElementById('pledgeAmount').addEventListener('input',function(){const amount=parseFloat(this.value)||0;const fee=amount*(feePercentage/100);const net=amount-fee;document.getElementById('feePreview').innerHTML=`Fee: KES ${fee.toFixed(2)} | Net to Event: KES ${net.toFixed(2)}`;});
-document.getElementById('pledgeForm').onsubmit=async function(e){e.preventDefault();const form=new FormData(this);const res=await fetch('/api/pledge/{{ event.token }}',{method:'POST',body:form});const data=await res.json();const resp=document.getElementById('pledgeResponse');if(data.success){resp.innerHTML=`<div class="alert alert-success">✅ ${data.success}</div>`;this.reset();document.getElementById('feePreview').innerHTML='';}else{resp.innerHTML=`<div class="alert alert-danger">❌ ${data.error}</div>`;}};
-function downloadWeeklyReceipt(token){fetch(`/receipt/weekly/${token}`).then(response=>response.blob()).then(blob=>{const url=window.URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`GoldenVow_Weekly_Receipt_${token}.pdf`;document.body.appendChild(a);a.click();a.remove();window.URL.revokeObjectURL(url);}).catch(()=>alert('❌ Error downloading.'));}
-function loadChat(){fetch('/api/chat/{{ event.id }}').then(r=>r.json()).then(data=>{const box=document.getElementById('chatBox');box.innerHTML=data.map(m=>`<div class="d-flex ${m.sender_type=='admin'?'justify-content-end':''}"><div class="chat-bubble ${m.sender_type=='admin'?'self':''}"><strong>${m.sender_name}</strong><br>${m.message}<div class="text-muted" style="font-size:0.6rem;">${m.timestamp}</div></div></div>`).join('');box.scrollTop=box.scrollHeight;});}
-setInterval(loadChat,5000);loadChat();
-function sendChat(){const name=document.getElementById('chatName');const input=document.getElementById('chatInput');if(!name.value.trim()||!input.value.trim())return;fetch('/api/chat/{{ event.id }}',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sender_name:name.value,sender_type:'contributor',message:input.value})}).then(()=>{input.value='';loadChat();});}
+document.getElementById('pledgeAmount').addEventListener('input',function(){ const amount=parseFloat(this.value)||0; const fee=amount*(feePercentage/100); const net=amount-fee; document.getElementById('feePreview').innerHTML=`Fee: KES ${fee.toFixed(2)} | Net to Event: KES ${net.toFixed(2)}`; });
+document.getElementById('pledgeForm').onsubmit=async function(e){ e.preventDefault(); const form=new FormData(this); const res=await fetch('/api/pledge/{{ event.token }}',{method:'POST',body:form}); const data=await res.json(); const resp=document.getElementById('pledgeResponse'); if(data.success){ resp.innerHTML=`<div class="alert alert-success">✅ ${data.success}</div>`; this.reset(); document.getElementById('feePreview').innerHTML=''; } else { resp.innerHTML=`<div class="alert alert-danger">❌ ${data.error}</div>`; } };
+function downloadWeeklyReceipt(token){ fetch(`/receipt/weekly/${token}`).then(response=>response.blob()).then(blob=>{ const url=window.URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=`GoldenVow_Weekly_Receipt_${token}.pdf`; document.body.appendChild(a); a.click(); a.remove(); window.URL.revokeObjectURL(url); }).catch(()=>alert('❌ Error downloading.')); }
+function loadChat(){ fetch('/api/chat/{{ event.id }}').then(r=>r.json()).then(data=>{ const box=document.getElementById('chatBox'); box.innerHTML=data.map(m=>`<div class="d-flex ${m.sender_type=='admin'?'justify-content-end':''}"><div class="chat-bubble ${m.sender_type=='admin'?'self':''}"><strong>${m.sender_name}</strong><br>${m.message}<div class="text-muted" style="font-size:0.6rem;">${m.timestamp}</div></div></div>`).join(''); box.scrollTop=box.scrollHeight; }); }
+setInterval(loadChat,5000); loadChat();
+function sendChat(){ const name=document.getElementById('chatName'); const input=document.getElementById('chatInput'); if(!name.value.trim()||!input.value.trim()) return; fetch('/api/chat/{{ event.id }}',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sender_name:name.value,sender_type:'contributor',message:input.value})}).then(()=>{ input.value=''; loadChat(); }); }
 </script>
-<style>
-.note-card { background: var(--bg-primary); border: 1px solid var(--gold); border-radius: 15px; padding: 20px; color: var(--text-primary); }
-.note-card .golden-text { color: var(--gold); }
-.countdown { font-size: 1.5rem; font-weight: bold; color: var(--gold); }
-.contributor-card { border: 1px solid var(--border-color); border-radius: 10px; padding: 10px; transition: var(--transition); }
-.contributor-card:hover { border-color: var(--gold); }
-.contrib-amount { font-weight: 600; color: var(--text-primary); }
-.your-remaining { background: #d4edda; border-radius: 8px; padding: 4px 10px; }
-.locked-overlay { background: rgba(26,42,58,0.95); padding: 40px 20px; border-radius: 15px; text-align: center; color: white; }
-.fee-breakdown { background: var(--bg-card); border-left: 4px solid var(--gold); padding: 10px 15px; border-radius: 5px; }
-.payment-detail { background: var(--bg-secondary); padding: 10px; border-radius: 10px; margin-bottom: 5px; }
-.support-badge { background: var(--bg-card); padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; }
-</style>
 {% endblock %}

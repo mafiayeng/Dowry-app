@@ -17,11 +17,14 @@ from reportlab.lib.pagesizes import A4
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'pL3x9QmW8vN2kR5yTzH7bJ4dF6sA1cX0')
 
-# ---- FORCE POSTGRESQL ----
+# ---- DATABASE (PostgreSQL preferred, SQLite fallback) ----
 database_url = os.environ.get('DATABASE_URL')
-if not database_url:
-    raise RuntimeError("DATABASE_URL environment variable is not set. Please set it to your PostgreSQL URL.")
-app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+if database_url:
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+    print("✅ Using PostgreSQL database.")
+else:
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
+    print("⚠️ DATABASE_URL not set. Using SQLite (data will NOT persist across redeploys).")
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.permanent_session_lifetime = timedelta(days=30)
@@ -224,12 +227,60 @@ def get_unread_notifications(admin_id):
 
 # ---------- DAILY NOTES ----------
 DAILY_NOTES = {
-    'dowry': ["A journey of love begins with a single step...", "Every shilling contributed is a brick...", "Love knows no bounds...", "Two families become one...", "Your kindness today creates memories...", "Together we rise...", "A beautiful future awaits..."],
-    'burial': ["In times of sorrow, we find strength...", "A life remembered is a life that lives on...", "We mourn together, we heal together...", "In loving memory of a beautiful soul...", "Grief shared is grief halved...", "Your kindness brings light...", "May their soul rest in peace..."],
-    'medical': ["Hope is the best medicine...", "Every contribution is a step toward recovery...", "Strength comes from community...", "Your generosity brings hope...", "Together we fight, together we heal...", "Every shilling brings a smile...", "Healing begins with hope..."],
-    'education': ["Every child deserves a chance to dream...", "Education is the most powerful weapon...", "Your generosity today builds a brighter tomorrow...", "Knowledge is the seed of greatness...", "Every shilling contributed is a step...", "The future belongs to those who believe...", "Together we build the leaders of tomorrow..."],
-    'harambee': ["When we come together, great things happen...", "Community is the foundation of progress...", "Together we rise...", "We are stronger together...", "Building a better future starts with us...", "United we stand, together we achieve...", "Community is the heart of progress..."],
-    'other': ["Great things happen when we come together...", "Every contribution, no matter how small...", "Your kindness creates a ripple...", "Together we make the impossible possible...", "Your support is a beacon of hope...", "Together we achieve more...", "Thank you for your generous heart..."]
+    'dowry': [
+        "A journey of love begins with a single step. Thank you for being part of this beautiful story.",
+        "Every shilling contributed is a brick in the foundation of a new family.",
+        "Love knows no bounds. Your generosity is building a legacy.",
+        "Two families become one. Thank you for supporting this union.",
+        "Your kindness today creates memories that will last a lifetime.",
+        "Together we rise. Every contribution brings this dream closer.",
+        "A beautiful future awaits. Thank you for being part of the journey."
+    ],
+    'burial': [
+        "In times of sorrow, we find strength in each other. Thank you for your support.",
+        "A life remembered is a life that lives on. Your kindness brings peace.",
+        "We mourn together, we heal together. Thank you for standing with us.",
+        "In loving memory of a beautiful soul. Your generosity honors their legacy.",
+        "Grief shared is grief halved. Thank you for your compassion.",
+        "Your kindness brings light to the darkest days. Thank you.",
+        "May their soul rest in peace. Thank you for your support and love."
+    ],
+    'medical': [
+        "Hope is the best medicine. Thank you for being part of the healing journey.",
+        "Every contribution is a step toward recovery. Your kindness matters.",
+        "Strength comes from community. Thank you for standing together.",
+        "Your generosity brings hope to those who need it most.",
+        "Together we fight, together we heal. Thank you for your support.",
+        "Every shilling brings a smile closer. Thank you for your kindness.",
+        "Healing begins with hope. Your support makes all the difference."
+    ],
+    'education': [
+        "Every child deserves a chance to dream. Thank you for investing in the future.",
+        "Education is the most powerful weapon. Thank you.",
+        "Your generosity today builds a brighter tomorrow. Thank you.",
+        "Knowledge is the seed of greatness. Thank you for nurturing dreams.",
+        "Every shilling contributed is a step toward a better future.",
+        "The future belongs to those who believe in the power of education.",
+        "Together we build the leaders of tomorrow. Thank you for your support."
+    ],
+    'harambee': [
+        "When we come together, great things happen. Thank you for being part of the change.",
+        "Community is the foundation of progress. Your support builds a better future.",
+        "Together we rise. Every contribution strengthens the bonds of community.",
+        "We are stronger together. Thank you for your generous spirit.",
+        "Building a better future starts with us. Thank you for your support.",
+        "United we stand, together we achieve. Thank you for your contribution.",
+        "Community is the heart of progress. Thank you for being part of the journey."
+    ],
+    'other': [
+        "Great things happen when we come together. Thank you for your support.",
+        "Every contribution, no matter how small, makes a difference.",
+        "Your kindness creates a ripple of change. Thank you for your generosity.",
+        "Together we make the impossible possible. Thank you.",
+        "Your support is a beacon of hope. Thank you for your kindness.",
+        "Together we achieve more. Thank you for being part of this journey.",
+        "Thank you for your generous heart. Every contribution brings us closer."
+    ]
 }
 
 def get_daily_note(event_type, day):
@@ -359,17 +410,15 @@ def utility_processor():
         now=datetime.utcnow
     )
 
-# ---------- MAINTENANCE FILTER (ONLY SUPER ADMIN CAN BYPASS) ----------
+# ---------- MAINTENANCE FILTER (ONLY SUPER ADMIN BYPASS) ----------
 @app.before_request
 def check_maintenance():
     if request.endpoint in ['static', 'force_maintenance_off']:
         return
-    # If user is Super Admin, let them through everything
     if is_admin_logged_in() and get_admin().is_super_admin:
         return
     setting = Setting.query.filter_by(key='maintenance_mode').first()
     if setting and setting.value == 'True':
-        # Allow only essential public routes for non-super-admin users
         allowed = ['login', 'register', 'maintenance', 'event_landing', 'contact', 'forgot_password', 'reset_password']
         if request.endpoint not in allowed:
             return render_template('maintenance.html'), 503
@@ -401,6 +450,7 @@ def register():
         password = request.form['password']
         email = request.form['email']
         phone = request.form.get('phone', '')
+        
         if Admin.query.filter_by(username=username).first():
             flash('⚠️ Username already taken. Please choose another.', 'danger')
             return redirect(url_for('register', event_token=event_token))
@@ -410,6 +460,7 @@ def register():
         if phone and Admin.query.filter_by(phone=phone).first():
             flash('⚠️ Phone number already registered. Please use a different number.', 'danger')
             return redirect(url_for('register', event_token=event_token))
+        
         hashed = hash_password(password)
         is_super = Admin.query.count() == 0
         admin = Admin(username=username, password_hash=hashed, email=email, phone=phone, is_super_admin=is_super)
@@ -537,7 +588,6 @@ def admin_dashboard():
     admin.last_action = datetime.utcnow()
     db.session.commit()
     events = Event.query.filter_by(admin_id=admin.id).order_by(desc(Event.created_at)).all()
-    # Pass maintenance status to template (optional)
     setting = Setting.query.filter_by(key='maintenance_mode').first()
     maintenance_mode = setting.value == 'True' if setting else False
     return render_template('admin_dashboard.html', admin=admin, events=events, maintenance_mode=maintenance_mode)
@@ -1093,7 +1143,7 @@ def mark_contact_read(msg_id):
     flash('✅ Message marked as read.', 'success')
     return redirect(url_for('super_admin_dashboard'))
 
-# ---------- API FOR NOTIFICATIONS ----------
+# ---------- API ----------
 @app.route('/api/notifications/unread')
 def api_unread_notifications():
     if not is_admin_logged_in():

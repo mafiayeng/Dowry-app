@@ -2,7 +2,6 @@
 {% block title %}Admin Dashboard – GoldenVow{% endblock %}
 {% block content %}
 <div class="container">
-    <!-- Help Button -->
     <div class="card p-2 mb-3 border border-warning" style="background: var(--bg-primary);">
         <div class="d-flex justify-content-between align-items-center">
             <span><i class="bi bi-headset golden"></i> <strong>Need help?</strong> Contact Super Admin</span>
@@ -12,21 +11,13 @@
             </div>
         </div>
     </div>
-
     {% if get_admin().is_super_admin %}
-    <div class="alert alert-info">
-        <i class="bi bi-eye"></i> You are in <strong>Monitoring Mode</strong>. You can view all events but cannot create or manage them. Go to the <a href="/superadmin" class="alert-link">Super Admin Panel</a> for full system oversight.
-    </div>
+    <div class="alert alert-info"><i class="bi bi-eye"></i> You are in <strong>Monitoring Mode</strong>. You can view all events but cannot create or manage them. Go to the <a href="/superadmin" class="alert-link">Super Admin Panel</a> for full system oversight.</div>
     {% endif %}
-
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h4><i class="bi bi-grid-1x2-fill golden me-2"></i> Dashboard</h4>
-        {% if not get_admin().is_super_admin %}
-            <a href="/admin/create" class="btn btn-gold"><i class="bi bi-plus-circle"></i> Create Event</a>
-        {% endif %}
+        {% if not get_admin().is_super_admin %}<a href="/admin/create" class="btn btn-gold"><i class="bi bi-plus-circle"></i> Create Event</a>{% endif %}
     </div>
-
-    <!-- Referral Card -->
     <div class="card p-3 mb-3 border border-warning">
         <div class="d-flex justify-content-between align-items-center">
             <div>
@@ -34,15 +25,10 @@
                 <p class="text-muted small mb-0">
                     <strong>Your Referral Code:</strong> <span class="badge bg-dark">{{ get_admin().referral_code }}</span>
                     <br><strong>Referrals:</strong> {{ get_admin().referral_count }}
-                    <br><strong>Your Fee:</strong>
-                    <span class="badge {% if get_admin().referral_count >= 1 %}bg-success{% else %}bg-secondary{% endif %}">
-                        {{ get_fee_percentage(get_admin().id) }}%
-                    </span>
+                    <br><strong>Your Fee:</strong> <span class="badge {% if get_admin().referral_count >= 1 %}bg-success{% else %}bg-secondary{% endif %}">{{ get_fee_percentage(get_admin().id) }}%</span>
                     {% if get_admin().referral_count >= 1 %}<span class="badge bg-success"><i class="bi bi-star-fill"></i> Discount Active!</span>{% endif %}
                 </p>
-                <p class="text-muted small" style="font-size:0.7rem;">
-                    <strong>Tiers:</strong> 1→1.8% | 3→1.6% | 5→1.4% | 10+→1.2%
-                </p>
+                <p class="text-muted small" style="font-size:0.7rem;"><strong>Tiers:</strong> 1→1.8% | 3→1.6% | 5→1.4% | 10+→1.2%</p>
             </div>
             <div>
                 <button class="btn btn-sm btn-gold" onclick="copyReferralLink()"><i class="bi bi-clipboard"></i> Copy Link</button>
@@ -50,11 +36,7 @@
             </div>
         </div>
     </div>
-
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% for cat, msg in messages %}<div class="alert alert-{{ cat }}">{{ msg }}</div>{% endfor %}
-    {% endwith %}
-
+    {% with messages = get_flashed_messages(with_categories=true) %}{% for cat, msg in messages %}<div class="alert alert-{{ cat }}">{{ msg }}</div>{% endfor %}{% endwith %}
     <div class="row">
         {% for event in events %}
         <div class="col-md-4 mb-3">
@@ -78,7 +60,6 @@
         {% endfor %}
     </div>
 </div>
-
 <script>
 function copyReferralLink() {
     const link = document.getElementById('referralLink').innerText;

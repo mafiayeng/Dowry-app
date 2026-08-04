@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head><title>Event Disabled – GoldenVow</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<style>
+body { background: #FEFCF3; font-family: 'Georgia', serif; min-height: 100vh; display: flex; align-items: center; }
+.golden { color: #D4AF37; }
+.btn-gold { background: #D4AF37; border: none; color: #1A2A3A; font-weight: bold; }
+.btn-gold:hover { background: #C5A02E; color: #1A2A3A; }
+</style>
+</head>
+<body>
+<div class="container text-center">
+    <div class="card p-5" style="max-width:500px; margin:0 auto;">
+        <div class="text-danger" style="font-size:4rem;"><i class="bi bi-exclamation-triangle"></i></div>
+        <h3 class="mt-3">This Event Has Been Disabled</h3>
+        <p class="text-muted">{{ event.disabled_reason or 'This event is no longer active. Please contact support.' }}</p>
+        <hr>
+        <p class="text-muted small">If you believe this is a mistake, please contact the Super Admin.</p>
+        <a href="/" class="btn btn-gold"><i class="bi bi-house"></i> Go Home</a>
+    </div>
+</div>
+</body>
+</html>

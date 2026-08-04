@@ -16,7 +16,13 @@ from reportlab.lib.pagesizes import A4
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'pL3x9QmW8vN2kR5yTzH7bJ4dF6sA1cX0')
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///database.db')
+
+# ---- FORCE POSTGRESQL ----
+database_url = os.environ.get('DATABASE_URL')
+if not database_url:
+    raise RuntimeError("DATABASE_URL environment variable is not set. Please set it to your PostgreSQL URL.")
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.permanent_session_lifetime = timedelta(days=30)
 db = SQLAlchemy(app)
@@ -26,7 +32,7 @@ SERVICE_FEE_PERCENTAGE = float(os.environ.get('SERVICE_FEE_PERCENTAGE', 2.0))
 SUPPORT_WHATSAPP = os.environ.get('SUPPORT_WHATSAPP', '254737349468')
 SUPPORT_EMAIL = os.environ.get('SUPPORT_EMAIL', 'support@goldenvow.com')
 
-# ---------- EMAIL / SMS (Disabled by default) ----------
+# ---------- EMAIL / SMS ----------
 def send_email_notification(subject, message, to=None):
     print(f"[EMAIL DISABLED] To: {to} | Subject: {subject} | Message: {message}")
     return True
@@ -169,7 +175,7 @@ class Setting(db.Model):
     key = db.Column(db.String(100), unique=True, nullable=False)
     value = db.Column(db.Text, nullable=False)
 
-# ---------- CREATE TABLES SAFETY ----------
+# ---------- CREATE TABLES ----------
 with app.app_context():
     db.create_all()
     if not Setting.query.filter_by(key='maintenance_mode').first():
@@ -353,16 +359,22 @@ def utility_processor():
         now=datetime.utcnow
     )
 
-# ---------- ROUTES ----------
+# ---------- MAINTENANCE FILTER (ONLY SUPER ADMIN CAN BYPASS) ----------
 @app.before_request
 def check_maintenance():
     if request.endpoint in ['static', 'force_maintenance_off']:
         return
+    # If user is Super Admin, let them through everything
+    if is_admin_logged_in() and get_admin().is_super_admin:
+        return
     setting = Setting.query.filter_by(key='maintenance_mode').first()
     if setting and setting.value == 'True':
-        if request.endpoint not in ['login', 'register', 'static', 'maintenance', 'event_landing', 'contact', 'forgot_password', 'reset_password']:
+        # Allow only essential public routes for non-super-admin users
+        allowed = ['login', 'register', 'maintenance', 'event_landing', 'contact', 'forgot_password', 'reset_password']
+        if request.endpoint not in allowed:
             return render_template('maintenance.html'), 503
 
+# ---------- ROUTES ----------
 @app.route('/force_maintenance_off')
 def force_maintenance_off():
     secret = request.args.get('secret')
@@ -525,7 +537,10 @@ def admin_dashboard():
     admin.last_action = datetime.utcnow()
     db.session.commit()
     events = Event.query.filter_by(admin_id=admin.id).order_by(desc(Event.created_at)).all()
-    return render_template('admin_dashboard.html', admin=admin, events=events)
+    # Pass maintenance status to template (optional)
+    setting = Setting.query.filter_by(key='maintenance_mode').first()
+    maintenance_mode = setting.value == 'True' if setting else False
+    return render_template('admin_dashboard.html', admin=admin, events=events, maintenance_mode=maintenance_mode)
 
 @app.route('/admin/create', methods=['GET', 'POST'])
 def admin_create_event():
@@ -731,17 +746,6 @@ def view_notifications():
     Notification.query.filter_by(admin_id=admin.id, is_read=False).update({'is_read': True})
     db.session.commit()
     return render_template('notifications.html', admin=admin, notifications=notifications)
-
-# ---------- NOTIFICATION API (FOR TOASTS) ----------
-@app.route('/api/notifications/unread')
-def api_unread_notifications():
-    if not is_admin_logged_in():
-        return jsonify({'count': 0, 'latest': None}), 401
-    admin = get_admin()
-    unread = Notification.query.filter_by(admin_id=admin.id, is_read=False).order_by(desc(Notification.created_at)).all()
-    count = len(unread)
-    latest = unread[0].message if unread else None
-    return jsonify({'count': count, 'latest': latest})
 
 # ---------- PUBLIC ----------
 @app.route('/e/<token>')
@@ -1088,6 +1092,17 @@ def mark_contact_read(msg_id):
     db.session.commit()
     flash('✅ Message marked as read.', 'success')
     return redirect(url_for('super_admin_dashboard'))
+
+# ---------- API FOR NOTIFICATIONS ----------
+@app.route('/api/notifications/unread')
+def api_unread_notifications():
+    if not is_admin_logged_in():
+        return jsonify({'count': 0, 'latest': None}), 401
+    admin = get_admin()
+    unread = Notification.query.filter_by(admin_id=admin.id, is_read=False).order_by(desc(Notification.created_at)).all()
+    count = len(unread)
+    latest = unread[0].message if unread else None
+    return jsonify({'count': count, 'latest': latest})
 
 # ---------- RUN ----------
 if __name__ == '__main__':

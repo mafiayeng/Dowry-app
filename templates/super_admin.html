@@ -182,24 +182,59 @@
         </div>
     </div>
 
-    <!-- System Controls -->
+    <!-- System Controls – MODERN TOGGLE -->
     <div class="card p-4">
         <h5><i class="bi bi-gear golden"></i> System Controls</h5>
         <form method="post" action="/superadmin/toggle_maintenance">
-            <div class="d-flex align-items-center">
-                <span class="me-3">Maintenance Mode:</span>
-                <button type="submit" class="btn {% if maintenance_mode %}btn-danger{% else %}btn-gold{% endif %}">
-                    {% if maintenance_mode %}<i class="bi bi-exclamation-triangle"></i> Turn OFF{% else %}<i class="bi bi-check-circle"></i> Turn ON{% endif %}
-                </button>
-                <span class="ms-3 text-muted">{% if maintenance_mode %}⚠️ Site in maintenance mode{% else %}✅ Site is live{% endif %}</span>
+            <div class="d-flex align-items-center flex-wrap gap-3">
+                <span class="fw-bold">Maintenance Mode</span>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="maintenanceSwitch"
+                           {% if maintenance_mode %}checked{% endif %}
+                           onchange="this.form.submit()">
+                    <label class="form-check-label" for="maintenanceSwitch">
+                        {% if maintenance_mode %}
+                            <span class="badge bg-danger">ON</span>
+                        {% else %}
+                            <span class="badge bg-success">OFF</span>
+                        {% endif %}
+                    </label>
+                </div>
+                <span class="text-muted">
+                    {% if maintenance_mode %}
+                        ⚠️ Site is in maintenance mode (public view blocked)
+                    {% else %}
+                        🤪 Site is live for all users
+                    {% endif %}
+                </span>
             </div>
         </form>
         <hr>
-        <p class="text-muted small"><i class="bi bi-info-circle"></i> Fee percentage: {{ fee_percentage }}%</p>
+        <p class="text-muted small">
+            <i class="bi bi-info-circle"></i> Fee percentage: {{ fee_percentage }}%
+            <br>
+            <i class="bi bi-key"></i> Emergency override: 
+            <code>/force_maintenance_off?secret=your-secret-key</code>
+        </p>
     </div>
 </div>
 <style>
 .stat-number { font-size: 2.5rem; font-weight: bold; color: var(--text-primary); }
 .stat-label { color: var(--text-secondary); font-size: 0.8rem; }
+.form-switch .form-check-input {
+    width: 3rem;
+    height: 1.5rem;
+    cursor: pointer;
+    background-color: var(--bg-secondary);
+    border-color: var(--border-color);
+}
+.form-switch .form-check-input:checked {
+    background-color: var(--gold);
+    border-color: var(--gold);
+}
+.form-switch .form-check-label {
+    font-weight: 600;
+    color: var(--text-primary);
+}
 </style>
 {% endblock %}

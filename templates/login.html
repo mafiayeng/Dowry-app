@@ -6,36 +6,20 @@
         <div class="glass-card">
             <div class="text-center mb-4">
                 <div style="font-size:3rem; color:var(--gold);">✦</div>
-                <h2 class="brand-name" style="font-family:'Playfair Display',serif; color:var(--text-primary);">Golden<span style="color:var(--gold);">Vow</span></h2>
+                <h2 style="font-family:'Playfair Display',serif; color:var(--text-primary);">Golden<span style="color:var(--gold);">Vow</span></h2>
                 <p style="color:var(--text-secondary); font-size:0.8rem; letter-spacing:2px;"><em>Tunza Mila</em> · Nurture Tradition</p>
             </div>
-
-            {% if event %}
-            <div class="alert alert-warning" style="background:var(--bg-primary); color:var(--text-primary); border-color:var(--gold);">
-                <i class="bi bi-info-circle"></i> Joining: <strong>{{ event.title }}</strong>
-            </div>
-            {% endif %}
-
+            {% if event %}<div class="alert alert-warning" style="background:var(--bg-primary); color:var(--text-primary); border-color:var(--gold);"><i class="bi bi-info-circle"></i> Joining: <strong>{{ event.title }}</strong></div>{% endif %}
             {% with messages = get_flashed_messages(with_categories=true) %}
-              {% for cat, msg in messages %}
-                <div class="alert alert-{{ cat }}">{{ msg }}</div>
-              {% endfor %}
+              {% for cat, msg in messages %}<div class="alert alert-{{ cat }}">{{ msg }}</div>{% endfor %}
             {% endwith %}
-
-            <form method="post">
-                <div class="mb-3">
-                    <input class="form-control" name="username" placeholder="Username" autocomplete="username" required>
-                </div>
-                <div class="mb-3">
-                    <input class="form-control" name="password" type="password" placeholder="Password" autocomplete="current-password" required>
-                </div>
+            <form method="post" action="{{ url_for('login', event_token=request.args.get('event_token')) }}">
+                <div class="mb-3"><input class="form-control" name="username" placeholder="Username" autocomplete="username" required></div>
+                <div class="mb-3"><input class="form-control" name="password" type="password" placeholder="Password" autocomplete="current-password" required></div>
                 <p class="text-end"><a href="/forgot_password" class="text-muted" style="font-size:0.8rem;">Forgot Password?</a></p>
                 <button class="btn btn-gold w-100"><i class="bi bi-box-arrow-in-right"></i> Sign In</button>
             </form>
-
-            <div class="text-center mt-3">
-                <p><small class="text-muted">Don't have an account? <a href="/register">Register</a></small></p>
-            </div>
+            <div class="text-center mt-3"><p><small class="text-muted">Don't have an account? <a href="/register">Register</a></small></p></div>
         </div>
     </div>
 </div>

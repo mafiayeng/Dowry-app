@@ -15,14 +15,14 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'your-super-secret-key-change-in-production')
+app.secret_key = os.environ.get('SECRET_KEY', 'pL3x9QmW8vN2kR5yTzH7bJ4dF6sA1cX0')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///database.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.permanent_session_lifetime = timedelta(days=30)
 db = SQLAlchemy(app)
 
 # ---------- CONFIG ----------
 SERVICE_FEE_PERCENTAGE = float(os.environ.get('SERVICE_FEE_PERCENTAGE', 2.0))
-MAINTENANCE_MODE = os.environ.get('MAINTENANCE_MODE', 'False') == 'True'
 SUPPORT_WHATSAPP = os.environ.get('SUPPORT_WHATSAPP', '254737349468')
 SUPPORT_EMAIL = os.environ.get('SUPPORT_EMAIL', 'support@goldenvow.com')
 
@@ -62,6 +62,7 @@ class Event(db.Model):
     deadline = db.Column(db.DateTime, nullable=False)
     event_date = db.Column(db.DateTime, nullable=False)
     picture_url = db.Column(db.String(500))
+    background_image_url = db.Column(db.String(500), nullable=True)
     paybill = db.Column(db.String(50))
     mpesa_number = db.Column(db.String(20))
     till_number = db.Column(db.String(50))
@@ -163,13 +164,19 @@ class PasswordReset(db.Model):
     used = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+class Setting(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    key = db.Column(db.String(100), unique=True, nullable=False)
+    value = db.Column(db.Text, nullable=False)
+
 # ---------- CREATE TABLES SAFETY ----------
 with app.app_context():
-    try:
-        db.create_all()
-        print("✅ Database tables created/verified.")
-    except Exception as e:
-        print(f"⚠️ Database init warning: {e}")
+    db.create_all()
+    if not Setting.query.filter_by(key='maintenance_mode').first():
+        setting = Setting(key='maintenance_mode', value='False')
+        db.session.add(setting)
+        db.session.commit()
+        print("✅ Maintenance setting created.")
 
 # ---------- HELPERS ----------
 def is_admin_logged_in():
@@ -327,7 +334,7 @@ def get_page_lock_status(event):
         return True
     return False
 
-# ---------- CONTEXT PROCESSORS (GLOBAL TEMPLATE VARS) ----------
+# ---------- CONTEXT PROCESSORS ----------
 @app.context_processor
 def utility_processor():
     return dict(
@@ -349,8 +356,23 @@ def utility_processor():
 # ---------- ROUTES ----------
 @app.before_request
 def check_maintenance():
-    if MAINTENANCE_MODE and request.endpoint not in ['login', 'register', 'static', 'maintenance', 'event_landing', 'contact', 'forgot_password', 'reset_password']:
-        return render_template('maintenance.html'), 503
+    if request.endpoint in ['static', 'force_maintenance_off']:
+        return
+    setting = Setting.query.filter_by(key='maintenance_mode').first()
+    if setting and setting.value == 'True':
+        if request.endpoint not in ['login', 'register', 'static', 'maintenance', 'event_landing', 'contact', 'forgot_password', 'reset_password']:
+            return render_template('maintenance.html'), 503
+
+@app.route('/force_maintenance_off')
+def force_maintenance_off():
+    secret = request.args.get('secret')
+    if secret != 'c4eB9xQmW8vN2kR5yTzH7bJ4dF6sA1cX0':
+        return "Unauthorized", 401
+    setting = Setting.query.filter_by(key='maintenance_mode').first()
+    if setting:
+        setting.value = 'False'
+        db.session.commit()
+    return "✅ Maintenance mode has been forced OFF. The app is now accessible."
 
 @app.route('/maintenance')
 def maintenance():
@@ -367,19 +389,15 @@ def register():
         password = request.form['password']
         email = request.form['email']
         phone = request.form.get('phone', '')
-
         if Admin.query.filter_by(username=username).first():
             flash('⚠️ Username already taken. Please choose another.', 'danger')
             return redirect(url_for('register', event_token=event_token))
-
         if Admin.query.filter_by(email=email).first():
             flash('⚠️ Email already registered. Please use a different email.', 'danger')
             return redirect(url_for('register', event_token=event_token))
-
         if phone and Admin.query.filter_by(phone=phone).first():
             flash('⚠️ Phone number already registered. Please use a different number.', 'danger')
             return redirect(url_for('register', event_token=event_token))
-
         hashed = hash_password(password)
         is_super = Admin.query.count() == 0
         admin = Admin(username=username, password_hash=hashed, email=email, phone=phone, is_super_admin=is_super)
@@ -406,20 +424,22 @@ def login():
     if event_token:
         event = Event.query.filter_by(token=event_token).first()
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
+        username = request.form.get('username')
+        password = request.form.get('password')
         admin = Admin.query.filter_by(username=username).first()
         if admin and check_password(password, admin.password_hash):
             session['admin_id'] = admin.id
+            session.permanent = True
             admin.last_login = datetime.utcnow()
             admin.last_action = datetime.utcnow()
             db.session.commit()
-            flash('Logged in.', 'success')
+            flash('Logged in successfully.', 'success')
             if event_token:
                 return redirect(url_for('public_event', token=event_token))
             return redirect(url_for('admin_dashboard'))
         else:
-            flash('Invalid credentials.', 'danger')
+            flash('Invalid username or password. Please try again.', 'danger')
+            return render_template('login.html', event=event)
     return render_template('login.html', event=event)
 
 @app.route('/logout')
@@ -433,7 +453,6 @@ def home():
         return redirect(url_for('admin_dashboard'))
     return redirect(url_for('login'))
 
-# ---------- FORGOT PASSWORD ----------
 @app.route('/forgot_password', methods=['GET', 'POST'])
 def forgot_password():
     if request.method == 'POST':
@@ -477,7 +496,6 @@ def reset_password():
         return redirect(url_for('login'))
     return render_template('reset_password.html', token=token)
 
-# ---------- CONTACT ----------
 @app.route('/contact', methods=['GET', 'POST'])
 def contact():
     if request.method == 'POST':
@@ -499,7 +517,6 @@ def contact():
         return redirect(url_for('contact'))
     return render_template('contact.html')
 
-# ---------- ADMIN ----------
 @app.route('/admin')
 def admin_dashboard():
     if not is_admin_logged_in():
@@ -516,7 +533,7 @@ def admin_create_event():
         return redirect(url_for('login'))
     admin = get_admin()
     if admin.is_super_admin:
-        flash('Super Admin cannot create events. Use the Admin dashboard for event management.', 'danger')
+        flash('Super Admin cannot create events.', 'danger')
         return redirect(url_for('admin_dashboard'))
     if request.method == 'POST':
         title = request.form['title']
@@ -538,6 +555,7 @@ def admin_create_event():
         payment_instructions = request.form.get('payment_instructions', '')
         whatsapp_contact = request.form.get('whatsapp_contact', '')
         picture_url = request.form.get('picture_url', '')
+        background_image_url = request.form.get('background_image_url', '')
         grace_period = int(request.form.get('grace_period', 0))
         super_admin_message = request.form.get('super_admin_message', '')
         deadline = datetime.strptime(deadline_str, '%Y-%m-%d')
@@ -546,9 +564,9 @@ def admin_create_event():
         event = Event(
             token=token, admin_id=admin.id, event_type=event_type, title=title,
             description=description, target_amount=target_amount, deadline=deadline,
-            event_date=event_date, picture_url=picture_url, paybill=paybill,
-            mpesa_number=mpesa_number, till_number=till_number, bank_name=bank_name,
-            bank_account_name=bank_account_name, bank_account_number=bank_account_number,
+            event_date=event_date, picture_url=picture_url, background_image_url=background_image_url,
+            paybill=paybill, mpesa_number=mpesa_number, till_number=till_number,
+            bank_name=bank_name, bank_account_name=bank_account_name, bank_account_number=bank_account_number,
             payment_instructions=payment_instructions, whatsapp_contact=whatsapp_contact,
             grace_period=grace_period, has_grace_period=grace_period > 0,
             super_admin_message=super_admin_message
@@ -907,7 +925,7 @@ def about():
 @app.route('/check-pending')
 def check_pending():
     secret = request.args.get('secret')
-    if secret != os.environ.get('CRON_SECRET', 'your-secret-key'):
+    if secret != os.environ.get('CRON_SECRET', 'c4eB9xQmW8vN2kR5yTzH7bJ4dF6sA1cX0'):
         return "Unauthorized", 401
     cutoff = datetime.utcnow() - timedelta(hours=12)
     pending = Contributor.query.filter(Contributor.status == 'pending', Contributor.created_at <= cutoff).all()
@@ -958,11 +976,13 @@ def super_admin_dashboard():
     total_contributions = db.session.query(func.sum(Contributor.pledge_amount)).scalar() or 0
     total_fees = db.session.query(func.sum(Contributor.fee_amount)).scalar() or 0
     withdrawals = Withdrawal.query.order_by(desc(Withdrawal.created_at)).all()
+    setting = Setting.query.filter_by(key='maintenance_mode').first()
+    maintenance_mode = setting.value == 'True' if setting else False
     return render_template('super_admin.html',
                          admin=admin, admins=all_admins, all_events=all_events,
                          total_events=total_events, total_contributors=total_contributors,
                          total_contributions=total_contributions, total_fees=total_fees,
-                         maintenance_mode=MAINTENANCE_MODE,
+                         maintenance_mode=maintenance_mode,
                          withdrawals=withdrawals, contact_messages=contact_messages)
 
 @app.route('/superadmin/remove_admin/<int:admin_id>', methods=['POST'])
@@ -989,11 +1009,14 @@ def superadmin_remove_admin(admin_id):
 @app.route('/superadmin/toggle_maintenance', methods=['POST'])
 def toggle_maintenance():
     if not is_admin_logged_in() or not get_admin().is_super_admin:
+        flash('Access denied.', 'danger')
         return redirect(url_for('login'))
-    global MAINTENANCE_MODE
-    MAINTENANCE_MODE = not MAINTENANCE_MODE
-    os.environ['MAINTENANCE_MODE'] = str(MAINTENANCE_MODE)
-    flash(f'Maintenance mode is now {"ON" if MAINTENANCE_MODE else "OFF"}.', 'success')
+    setting = Setting.query.filter_by(key='maintenance_mode').first()
+    current = setting.value == 'True'
+    setting.value = str(not current)
+    db.session.commit()
+    status = "ON" if setting.value == 'True' else "OFF"
+    flash(f'🔧 Maintenance mode is now {status}.', 'success')
     return redirect(url_for('super_admin_dashboard'))
 
 @app.route('/superadmin/withdrawal/<int:withdrawal_id>', methods=['POST'])

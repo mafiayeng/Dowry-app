@@ -15,8 +15,8 @@
     {% block head %}{% endblock %}
 </head>
 <body>
-    <!-- Background Animation (only for login/register) -->
-    {% if request.endpoint in ['login', 'register'] %}
+    <!-- Background Animation (only for clean pages) -->
+    {% if request.endpoint in ['login', 'register', 'forgot_password', 'reset_password', 'contact'] %}
     <div class="bg-animation">
         <div class="bg-circle"></div>
         <div class="bg-circle"></div>
@@ -24,7 +24,8 @@
     </div>
     {% endif %}
 
-    <!-- Navbar -->
+    <!-- Navbar – Hide on clean pages -->
+    {% if request.endpoint not in ['login', 'register', 'forgot_password', 'reset_password', 'contact'] %}
     <nav class="navbar navbar-expand-lg custom-navbar">
         <div class="container">
             <a class="navbar-brand d-flex align-items-center" href="/">
@@ -72,13 +73,15 @@
             </div>
         </div>
     </nav>
+    {% endif %}
 
     <!-- Main Content -->
     <main class="py-4">
         {% block content %}{% endblock %}
     </main>
 
-    <!-- Footer -->
+    <!-- Footer – Hide on clean pages -->
+    {% if request.endpoint not in ['login', 'register', 'forgot_password', 'reset_password', 'contact'] %}
     <footer class="text-center py-3 border-top" style="border-color: var(--border-color) !important;">
         <div class="container">
             <p class="text-muted mb-0" style="font-size:0.7rem;">
@@ -90,6 +93,7 @@
             </p>
         </div>
     </footer>
+    {% endif %}
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>

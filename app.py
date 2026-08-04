@@ -4,6 +4,7 @@ import random
 import string
 import io
 import zipfile
+import secrets
 from datetime import datetime, timedelta
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, send_file
 from flask_sqlalchemy import SQLAlchemy
@@ -14,7 +15,7 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 
 app = Flask(__name__)
-app.secret_key = 'your-super-secret-key-change-in-production'
+app.secret_key = os.environ.get('SECRET_KEY', 'your-super-secret-key-change-in-production')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///database.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
@@ -25,12 +26,11 @@ MAINTENANCE_MODE = os.environ.get('MAINTENANCE_MODE', 'False') == 'True'
 SUPPORT_WHATSAPP = os.environ.get('SUPPORT_WHATSAPP', '254737349468')
 SUPPORT_EMAIL = os.environ.get('SUPPORT_EMAIL', 'support@goldenvow.com')
 
-# ---------- EMAIL (Disabled – Add Later) ----------
+# ---------- EMAIL (Placeholder – Enable Later) ----------
 def send_email_notification(subject, message, to=None):
-    print(f"[EMAIL DISABLED] Subject: {subject} | Message: {message} | To: {to}")
+    print(f"[EMAIL DISABLED] To: {to} | Subject: {subject} | Message: {message}")
     return True
 
-# ---------- SMS (Disabled – Add Later) ----------
 def send_sms(phone, message):
     print(f"[SMS DISABLED] Phone: {phone} | Message: {message}")
     return True
@@ -80,6 +80,8 @@ class Event(db.Model):
     ended_at = db.Column(db.DateTime, nullable=True)
     thank_you_message = db.Column(db.Text, nullable=True)
     super_admin_message = db.Column(db.Text, nullable=True)
+    disabled = db.Column(db.Boolean, default=False)
+    disabled_reason = db.Column(db.Text, nullable=True)
 
 class Contributor(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -143,6 +145,24 @@ class Withdrawal(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     paid_at = db.Column(db.DateTime, nullable=True)
 
+class ContactMessage(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(150), nullable=False)
+    email = db.Column(db.String(100), nullable=False)
+    phone = db.Column(db.String(20), nullable=True)
+    subject = db.Column(db.String(200), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    is_read = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class PasswordReset(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    admin_id = db.Column(db.Integer, db.ForeignKey('admin.id'))
+    token = db.Column(db.String(100), unique=True, nullable=False)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    used = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
 with app.app_context():
     db.create_all()
 
@@ -176,15 +196,8 @@ def hash_password(plain):
 def check_password(plain, hashed):
     return bcrypt.checkpw(plain.encode('utf-8'), hashed.encode('utf-8'))
 
-# ---------- NOTIFICATION HELPERS ----------
 def create_notification(admin_id, message, type='info', event_id=None, contributor_id=None):
-    notif = Notification(
-        admin_id=admin_id,
-        event_id=event_id,
-        contributor_id=contributor_id,
-        message=message,
-        type=type
-    )
+    notif = Notification(admin_id=admin_id, event_id=event_id, contributor_id=contributor_id, message=message, type=type)
     db.session.add(notif)
     db.session.commit()
 
@@ -193,60 +206,12 @@ def get_unread_notifications(admin_id):
 
 # ---------- DAILY NOTES ----------
 DAILY_NOTES = {
-    'dowry': [
-        "A journey of love begins with a single step. Thank you for being part of this beautiful story.",
-        "Every shilling contributed is a brick in the foundation of a new family.",
-        "Love knows no bounds. Your generosity is building a legacy.",
-        "Two families become one. Thank you for supporting this union.",
-        "Your kindness today creates memories that will last a lifetime.",
-        "Together we rise. Every contribution brings this dream closer.",
-        "A beautiful future awaits. Thank you for being part of the journey."
-    ],
-    'burial': [
-        "In times of sorrow, we find strength in each other. Thank you for your support.",
-        "A life remembered is a life that lives on. Your kindness brings peace.",
-        "We mourn together, we heal together. Thank you for standing with us.",
-        "In loving memory of a beautiful soul. Your generosity honors their legacy.",
-        "Grief shared is grief halved. Thank you for your compassion.",
-        "Your kindness brings light to the darkest days. Thank you.",
-        "May their soul rest in peace. Thank you for your support and love."
-    ],
-    'medical': [
-        "Hope is the best medicine. Thank you for being part of the healing journey.",
-        "Every contribution is a step toward recovery. Your kindness matters.",
-        "Strength comes from community. Thank you for standing together.",
-        "Your generosity brings hope to those who need it most.",
-        "Together we fight, together we heal. Thank you for your support.",
-        "Every shilling brings a smile closer. Thank you for your kindness.",
-        "Healing begins with hope. Your support makes all the difference."
-    ],
-    'education': [
-        "Every child deserves a chance to dream. Thank you for investing in the future.",
-        "Education is the most powerful weapon you can give a child. Thank you.",
-        "Your generosity today builds a brighter tomorrow. Thank you.",
-        "Knowledge is the seed of greatness. Thank you for nurturing dreams.",
-        "Every shilling contributed is a step toward a better future.",
-        "The future belongs to those who believe in the power of education.",
-        "Together we build the leaders of tomorrow. Thank you for your support."
-    ],
-    'harambee': [
-        "When we come together, great things happen. Thank you for being part of the change.",
-        "Community is the foundation of progress. Your support builds a better future.",
-        "Together we rise. Every contribution strengthens the bonds of community.",
-        "We are stronger together. Thank you for your generous spirit.",
-        "Building a better future starts with us. Thank you for your support.",
-        "United we stand, together we achieve. Thank you for your contribution.",
-        "Community is the heart of progress. Thank you for being part of the journey."
-    ],
-    'other': [
-        "Great things happen when we come together. Thank you for your support.",
-        "Every contribution, no matter how small, makes a difference.",
-        "Your kindness creates a ripple of change. Thank you for your generosity.",
-        "Together we make the impossible possible. Thank you.",
-        "Your support is a beacon of hope. Thank you for your kindness.",
-        "Together we achieve more. Thank you for being part of this journey.",
-        "Thank you for your generous heart. Every contribution brings us closer."
-    ]
+    'dowry': ["A journey of love begins with a single step...", "Every shilling contributed is a brick...", "Love knows no bounds...", "Two families become one...", "Your kindness today creates memories...", "Together we rise...", "A beautiful future awaits..."],
+    'burial': ["In times of sorrow, we find strength...", "A life remembered is a life that lives on...", "We mourn together, we heal together...", "In loving memory of a beautiful soul...", "Grief shared is grief halved...", "Your kindness brings light...", "May their soul rest in peace..."],
+    'medical': ["Hope is the best medicine...", "Every contribution is a step toward recovery...", "Strength comes from community...", "Your generosity brings hope...", "Together we fight, together we heal...", "Every shilling brings a smile...", "Healing begins with hope..."],
+    'education': ["Every child deserves a chance to dream...", "Education is the most powerful weapon...", "Your generosity today builds a brighter tomorrow...", "Knowledge is the seed of greatness...", "Every shilling contributed is a step...", "The future belongs to those who believe...", "Together we build the leaders of tomorrow..."],
+    'harambee': ["When we come together, great things happen...", "Community is the foundation of progress...", "Together we rise...", "We are stronger together...", "Building a better future starts with us...", "United we stand, together we achieve...", "Community is the heart of progress..."],
+    'other': ["Great things happen when we come together...", "Every contribution, no matter how small...", "Your kindness creates a ripple...", "Together we make the impossible possible...", "Your support is a beacon of hope...", "Together we achieve more...", "Thank you for your generous heart..."]
 }
 
 def get_daily_note(event_type, day):
@@ -266,7 +231,7 @@ EVENT_COLORS = {
 def generate_event_logo(event, size=120):
     colors = EVENT_COLORS.get(event.event_type, EVENT_COLORS['other'])
     initials = ''.join([word[0].upper() for word in event.title.split()][:2])
-    if len(initials) < 1:
+    if not initials:
         initials = event.title[:2].upper()
     svg = f'''<svg width="{size}" height="{size}" viewBox="0 0 {size} {size}" xmlns="http://www.w3.org/2000/svg">
         <circle cx="{size/2}" cy="{size/2}" r="{size/2 - 5}" fill="{colors['bg1']}" />
@@ -293,7 +258,7 @@ def get_app_logo(size=40):
     </svg>'''
     return svg
 
-# ---------- FEE & LOCK ----------
+# ---------- FEE ----------
 def get_fee_percentage(admin_id):
     admin = Admin.query.get(admin_id)
     if not admin:
@@ -347,6 +312,8 @@ def is_fee_overdue(event):
     return False
 
 def get_page_lock_status(event):
+    if event.disabled:
+        return True
     if not event.first_contribution_date:
         return False
     if event.fee_paid:
@@ -355,78 +322,10 @@ def get_page_lock_status(event):
         return True
     return False
 
-THANK_YOU_MESSAGES = {
-    'dowry': "Thank you for supporting our dowry arrangements! Your generosity brings two families together. 🙏",
-    'burial': "Thank you for your support during this difficult time. Your kindness means the world to us. 🙏",
-    'medical': "Thank you for helping with the medical expenses. Your generosity brings hope and healing. 🙏",
-    'education': "Thank you for investing in education. Your support is building a brighter future. 🙏",
-    'harambee': "Thank you for being part of the community. Together we achieve great things. 🙏",
-    'other': "Thank you for your generous contribution. Your kindness makes a difference. 🙏"
-}
-
-def get_thank_you_message(event_type, name, event_title):
-    base = THANK_YOU_MESSAGES.get(event_type, THANK_YOU_MESSAGES['other'])
-    return f"Dear {name},\n\n{base}\n\nWith gratitude,\n{event_title} Family 🙏"
-
-# ---------- PENDING CHECK ----------
-@app.route('/check-pending')
-def check_pending():
-    secret = request.args.get('secret')
-    if secret != os.environ.get('CRON_SECRET', 'your-secret-key'):
-        return "Unauthorized", 401
-
-    cutoff = datetime.utcnow() - timedelta(hours=12)
-    pending = Contributor.query.filter(
-        Contributor.status == 'pending',
-        Contributor.created_at <= cutoff
-    ).all()
-
-    admin_pending = {}
-    for c in pending:
-        event = Event.query.get(c.event_id)
-        if event:
-            admin_id = event.admin_id
-            admin_pending.setdefault(admin_id, []).append(c)
-
-    for admin_id, contributors in admin_pending.items():
-        admin = Admin.query.get(admin_id)
-        if not admin:
-            continue
-        last_reminder = Notification.query.filter_by(
-            admin_id=admin_id,
-            type='pending_reminder'
-        ).order_by(desc(Notification.created_at)).first()
-        if last_reminder and (datetime.utcnow() - last_reminder.created_at).total_seconds() < 21600:
-            continue
-        count = len(contributors)
-        msg = f"⏰ You have {count} pending approval{'s' if count>1 else ''} older than 12 hours. Please review them."
-        create_notification(admin_id, msg, 'pending_reminder')
-        send_email_notification("Pending Approvals Reminder", f"Dear {admin.username},\n\n{msg}\n\nLogin: {request.host_url}admin", admin.email)
-
-    inactive_cutoff = datetime.utcnow() - timedelta(hours=24)
-    inactive = Admin.query.filter(
-        Admin.last_action < inactive_cutoff,
-        Admin.is_super_admin == False
-    ).all()
-    if inactive:
-        super_admin = Admin.query.filter_by(is_super_admin=True).first()
-        if super_admin:
-            last_notify = Notification.query.filter_by(
-                admin_id=super_admin.id,
-                type='inactivity_alert'
-            ).order_by(desc(Notification.created_at)).first()
-            if not last_notify or (datetime.utcnow() - last_notify.created_at).total_seconds() >= 21600:
-                names = [a.username for a in inactive]
-                msg = f"📞 Inactive admins (>24h): {', '.join(names)}"
-                create_notification(super_admin.id, msg, 'inactivity_alert')
-                send_email_notification("Inactive Admins Alert", msg, super_admin.email)
-
-    return "OK", 200
-
 # ---------- ROUTES ----------
 @app.before_request
 def check_maintenance():
-    if MAINTENANCE_MODE and request.endpoint not in ['login', 'register', 'static', 'maintenance', 'event_landing']:
+    if MAINTENANCE_MODE and request.endpoint not in ['login', 'register', 'static', 'maintenance', 'event_landing', 'contact', 'forgot_password', 'reset_password']:
         return render_template('maintenance.html'), 503
 
 @app.route('/maintenance')
@@ -503,6 +402,74 @@ def home():
         return redirect(url_for('admin_dashboard'))
     return redirect(url_for('login'))
 
+# ---------- FORGOT PASSWORD ----------
+@app.route('/forgot_password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        admin = Admin.query.filter_by(email=email).first()
+        if not admin:
+            flash('No account found with that email.', 'danger')
+            return redirect(url_for('forgot_password'))
+        token = secrets.token_urlsafe(32)
+        expires = datetime.utcnow() + timedelta(hours=24)
+        reset = PasswordReset(admin_id=admin.id, token=token, expires_at=expires)
+        db.session.add(reset)
+        db.session.commit()
+        reset_link = f"{request.host_url}reset_password?token={token}"
+        send_email_notification("Password Reset Request", f"Click this link to reset your password: {reset_link}\n\nThis link expires in 24 hours.", to=admin.email)
+        flash('✅ Password reset link sent to your email.', 'success')
+        return redirect(url_for('login'))
+    return render_template('forgot_password.html')
+
+@app.route('/reset_password', methods=['GET', 'POST'])
+def reset_password():
+    token = request.args.get('token')
+    if not token:
+        flash('Invalid reset link.', 'danger')
+        return redirect(url_for('login'))
+    reset = PasswordReset.query.filter_by(token=token, used=False).first()
+    if not reset or reset.expires_at < datetime.utcnow():
+        flash('Reset link expired or invalid.', 'danger')
+        return redirect(url_for('login'))
+    if request.method == 'POST':
+        password = request.form.get('password')
+        confirm = request.form.get('confirm_password')
+        if password != confirm:
+            flash('Passwords do not match.', 'danger')
+            return render_template('reset_password.html', token=token)
+        admin = Admin.query.get(reset.admin_id)
+        admin.password_hash = hash_password(password)
+        reset.used = True
+        db.session.commit()
+        flash('✅ Password reset successfully. Please login.', 'success')
+        return redirect(url_for('login'))
+    return render_template('reset_password.html', token=token)
+
+# ---------- CONTACT ----------
+@app.route('/contact', methods=['GET', 'POST'])
+def contact():
+    if request.method == 'POST':
+        name = request.form.get('name')
+        email = request.form.get('email')
+        phone = request.form.get('phone', '')
+        subject = request.form.get('subject')
+        message = request.form.get('message')
+        if not name or not email or not subject or not message:
+            flash('Please fill in all required fields.', 'danger')
+            return render_template('contact.html')
+        contact = ContactMessage(name=name, email=email, phone=phone, subject=subject, message=message)
+        db.session.add(contact)
+        db.session.commit()
+        super_admin = Admin.query.filter_by(is_super_admin=True).first()
+        if super_admin:
+            create_notification(super_admin.id, f"📩 New contact message from {name}: {subject}", 'contact')
+        flash('✅ Your message has been sent. We will get back to you soon!', 'success')
+        return redirect(url_for('contact'))
+    app_logo = get_app_logo(40)
+    return render_template('contact.html', app_logo=app_logo)
+
+# ---------- ADMIN ----------
 @app.route('/admin')
 def admin_dashboard():
     if not is_admin_logged_in():
@@ -520,8 +487,9 @@ def admin_create_event():
     if not is_admin_logged_in():
         return redirect(url_for('login'))
     admin = get_admin()
-    admin.last_action = datetime.utcnow()
-    db.session.commit()
+    if admin.is_super_admin:
+        flash('Super Admin cannot create events. Use the Admin dashboard for event management.', 'danger')
+        return redirect(url_for('admin_dashboard'))
     if request.method == 'POST':
         title = request.form['title']
         existing = Event.query.filter_by(title=title).first()
@@ -572,6 +540,8 @@ def admin_view_event(event_id):
     admin.last_action = datetime.utcnow()
     db.session.commit()
     event = Event.query.filter_by(id=event_id, admin_id=admin.id).first_or_404()
+    if event.disabled:
+        flash('This event has been disabled by the Super Admin.', 'warning')
     contributors = Contributor.query.filter_by(event_id=event.id).order_by(Contributor.created_at).all()
     total_contributions = get_event_total_contributions(event.id)
     total_fees = get_event_total_fee(event.id)
@@ -664,44 +634,24 @@ def admin_generate_early_receipt(event_id):
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
-    c.setFillColorRGB(1,1,1)
-    c.rect(0,0,width,height,fill=1)
-    c.setStrokeColorRGB(0.83,0.69,0.22)
-    c.setLineWidth(3)
-    c.rect(40,40,width-80,height-80)
-    c.setFillColorRGB(0.83,0.69,0.22)
-    c.setFont("Helvetica-Bold", 24)
-    c.drawString(200, height-80, "✦ GOLDENVOW ✦")
-    c.setFillColorRGB(0.2,0.2,0.2)
-    c.setFont("Helvetica", 12)
-    c.drawString(220, height-100, "Tunza Mila · Nurture Tradition")
-    c.setFillColorRGB(0,0,0)
-    c.setFont("Helvetica-Bold", 18)
-    c.drawString(50, height-150, event.title)
-    c.setFont("Helvetica", 12)
-    c.drawString(50, height-190, f"Contributor: {contrib.name}")
+    c.setFillColorRGB(1,1,1); c.rect(0,0,width,height,fill=1)
+    c.setStrokeColorRGB(0.83,0.69,0.22); c.setLineWidth(3); c.rect(40,40,width-80,height-80)
+    c.setFillColorRGB(0.83,0.69,0.22); c.setFont("Helvetica-Bold", 24); c.drawString(200, height-80, "✦ GOLDENVOW ✦")
+    c.setFillColorRGB(0.2,0.2,0.2); c.setFont("Helvetica", 12); c.drawString(220, height-100, "Tunza Mila · Nurture Tradition")
+    c.setFillColorRGB(0,0,0); c.setFont("Helvetica-Bold", 18); c.drawString(50, height-150, event.title)
+    c.setFont("Helvetica", 12); c.drawString(50, height-190, f"Contributor: {contrib.name}")
     c.drawString(50, height-210, f"Phone: {contrib.phone}")
     c.drawString(50, height-230, f"Date Range: {start.strftime('%d %b %Y')} - {end.strftime('%d %b %Y')}")
     c.line(50, height-250, width-50, height-250)
-    c.setFont("Helvetica-Bold", 14)
-    c.drawString(50, height-280, "Payment History")
-    y = height-310
-    c.setFont("Helvetica", 10)
+    c.setFont("Helvetica-Bold", 14); c.drawString(50, height-280, "Payment History")
+    y = height-310; c.setFont("Helvetica", 10)
     for p in payments:
-        c.drawString(50, y, f"{p.date_paid.strftime('%d %b %Y, %H:%M')} - KES {p.amount}")
-        y -= 20
-    if not payments:
-        c.drawString(50, y, "No payments in this period.")
+        c.drawString(50, y, f"{p.date_paid.strftime('%d %b %Y, %H:%M')} - KES {p.amount}"); y -= 20
+    if not payments: c.drawString(50, y, "No payments in this period.")
     y = 70
-    c.setFillColorRGB(0.83,0.69,0.22)
-    c.setFont("Helvetica-Oblique", 12)
-    c.drawString(50, y+30, '"Thank you for being part of this journey. Every contribution matters."')
-    c.setFillColorRGB(0.2,0.2,0.2)
-    c.setFont("Helvetica-Bold", 10)
-    c.drawString(50, y+10, "GoldenVow · Tunza Mila")
-    c.setFillColorRGB(0.5,0.5,0.5)
-    c.setFont("Helvetica", 8)
-    c.drawString(50, y-10, event.super_admin_message or "Sincerely thankful from the Super Admin – building a golden future together.")
+    c.setFillColorRGB(0.83,0.69,0.22); c.setFont("Helvetica-Oblique", 12); c.drawString(50, y+30, '"Thank you for being part of this journey. Every contribution matters."')
+    c.setFillColorRGB(0.2,0.2,0.2); c.setFont("Helvetica-Bold", 10); c.drawString(50, y+10, "GoldenVow · Tunza Mila")
+    c.setFillColorRGB(0.5,0.5,0.5); c.setFont("Helvetica", 8); c.drawString(50, y-10, event.super_admin_message or "Sincerely thankful from the Super Admin – building a golden future together.")
     c.drawString(50, y-25, "© 2026 GoldenVow · All rights reserved.")
     c.save()
     buffer.seek(0)
@@ -732,10 +682,23 @@ def admin_download_all_receipts(event_id):
     return send_file(zip_buffer, mimetype='application/zip', as_attachment=True,
                      download_name=f"{event.title}_all_receipts.zip")
 
+@app.route('/notifications')
+def view_notifications():
+    if not is_admin_logged_in():
+        return redirect(url_for('login'))
+    admin = get_admin()
+    notifications = Notification.query.filter_by(admin_id=admin.id).order_by(desc(Notification.created_at)).all()
+    Notification.query.filter_by(admin_id=admin.id, is_read=False).update({'is_read': True})
+    db.session.commit()
+    app_logo = get_app_logo(40)
+    return render_template('notifications.html', admin=admin, notifications=notifications, app_logo=app_logo)
+
 # ---------- PUBLIC ----------
 @app.route('/e/<token>')
 def public_event(token):
     event = Event.query.filter_by(token=token, is_active=True).first_or_404()
+    if event.disabled:
+        return render_template('event_disabled.html', event=event)
     if not is_admin_logged_in():
         return redirect(url_for('event_landing', token=token))
     admin = get_admin()
@@ -765,6 +728,7 @@ def public_event(token):
         week_ago = datetime.utcnow() - timedelta(days=7)
         payments = Payment.query.filter(Payment.contributor_id == contrib.id, Payment.date_paid >= week_ago).all()
         weekly_total = sum(p.amount for p in payments)
+    total_raised = get_event_total_paid(event.id)
     return render_template('public_event.html',
                          event=event, contributors=contributors, messages=messages,
                          daily_note=daily_note, is_locked=is_locked,
@@ -775,12 +739,15 @@ def public_event(token):
                          can_download_weekly=can_download_weekly,
                          next_available_date=next_available,
                          weekly_total=weekly_total,
+                         total_raised=total_raised,
                          support_whatsapp=SUPPORT_WHATSAPP,
                          support_email=SUPPORT_EMAIL)
 
 @app.route('/join/<token>')
 def event_landing(token):
     event = Event.query.filter_by(token=token, is_active=True).first_or_404()
+    if event.disabled:
+        return render_template('event_disabled.html', event=event)
     logo_svg = generate_event_logo(event, 80)
     app_logo = get_app_logo(40)
     return render_template('event_landing.html', event=event, logo_svg=logo_svg, app_logo=app_logo)
@@ -790,6 +757,8 @@ def api_pledge(token):
     if not is_admin_logged_in():
         return jsonify({'error': 'Please login to pledge.'}), 401
     event = Event.query.filter_by(token=token, is_active=True).first_or_404()
+    if event.disabled:
+        return jsonify({'error': 'This event has been disabled.'}), 400
     if is_fee_overdue(event):
         return jsonify({'error': 'This event is locked. Contact organizer.'}), 400
     deadline_extended = event.deadline + timedelta(days=event.grace_period if event.has_grace_period else 0)
@@ -883,52 +852,30 @@ def weekly_receipt(token):
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
-    c.setFillColorRGB(1,1,1)
-    c.rect(0,0,width,height,fill=1)
-    c.setStrokeColorRGB(0.83,0.69,0.22)
-    c.setLineWidth(3)
-    c.rect(40,40,width-80,height-80)
-    c.setFillColorRGB(0.83,0.69,0.22)
-    c.setFont("Helvetica-Bold", 24)
-    c.drawString(200, height-80, "✦ GOLDENVOW ✦")
-    c.setFillColorRGB(0.2,0.2,0.2)
-    c.setFont("Helvetica", 12)
-    c.drawString(220, height-100, "Tunza Mila · Nurture Tradition")
-    c.setFillColorRGB(0,0,0)
-    c.setFont("Helvetica-Bold", 18)
-    c.drawString(50, height-150, event.title)
-    c.setFont("Helvetica", 12)
-    c.drawString(50, height-190, f"Contributor: {contrib.name}")
+    c.setFillColorRGB(1,1,1); c.rect(0,0,width,height,fill=1)
+    c.setStrokeColorRGB(0.83,0.69,0.22); c.setLineWidth(3); c.rect(40,40,width-80,height-80)
+    c.setFillColorRGB(0.83,0.69,0.22); c.setFont("Helvetica-Bold", 24); c.drawString(200, height-80, "✦ GOLDENVOW ✦")
+    c.setFillColorRGB(0.2,0.2,0.2); c.setFont("Helvetica", 12); c.drawString(220, height-100, "Tunza Mila · Nurture Tradition")
+    c.setFillColorRGB(0,0,0); c.setFont("Helvetica-Bold", 18); c.drawString(50, height-150, event.title)
+    c.setFont("Helvetica", 12); c.drawString(50, height-190, f"Contributor: {contrib.name}")
     c.drawString(50, height-210, f"Phone: {contrib.phone}")
     c.drawString(50, height-230, f"Week Ending: {datetime.utcnow().strftime('%d %b %Y')}")
     c.line(50, height-250, width-50, height-250)
-    c.setFont("Helvetica-Bold", 14)
-    c.drawString(50, height-280, "Weekly Summary")
-    c.setFont("Helvetica", 12)
-    c.drawString(50, height-310, f"Total Pledged: KES {contrib.pledge_amount}")
+    c.setFont("Helvetica-Bold", 14); c.drawString(50, height-280, "Weekly Summary")
+    c.setFont("Helvetica", 12); c.drawString(50, height-310, f"Total Pledged: KES {contrib.pledge_amount}")
     c.drawString(50, height-330, f"Total Paid: KES {contrib.paid_amount}")
     weekly_sum = sum(p.amount for p in payments)
     c.drawString(50, height-350, f"Weekly Total: KES {weekly_sum}")
     c.line(50, height-370, width-50, height-370)
-    c.setFont("Helvetica-Bold", 14)
-    c.drawString(50, height-400, "Payment History")
-    y = height-430
-    c.setFont("Helvetica", 10)
+    c.setFont("Helvetica-Bold", 14); c.drawString(50, height-400, "Payment History")
+    y = height-430; c.setFont("Helvetica", 10)
     for p in payments:
-        c.drawString(50, y, f"{p.date_paid.strftime('%d %b %Y, %H:%M')} - KES {p.amount}")
-        y -= 20
-    if not payments:
-        c.drawString(50, y, "No payments this week.")
+        c.drawString(50, y, f"{p.date_paid.strftime('%d %b %Y, %H:%M')} - KES {p.amount}"); y -= 20
+    if not payments: c.drawString(50, y, "No payments this week.")
     y = 70
-    c.setFillColorRGB(0.83,0.69,0.22)
-    c.setFont("Helvetica-Oblique", 12)
-    c.drawString(50, y+30, '"Thank you for being part of this journey. Every contribution matters."')
-    c.setFillColorRGB(0.2,0.2,0.2)
-    c.setFont("Helvetica-Bold", 10)
-    c.drawString(50, y+10, "GoldenVow · Tunza Mila")
-    c.setFillColorRGB(0.5,0.5,0.5)
-    c.setFont("Helvetica", 8)
-    c.drawString(50, y-10, event.super_admin_message or "Sincerely thankful from the Super Admin – building a golden future together.")
+    c.setFillColorRGB(0.83,0.69,0.22); c.setFont("Helvetica-Oblique", 12); c.drawString(50, y+30, '"Thank you for being part of this journey. Every contribution matters."')
+    c.setFillColorRGB(0.2,0.2,0.2); c.setFont("Helvetica-Bold", 10); c.drawString(50, y+10, "GoldenVow · Tunza Mila")
+    c.setFillColorRGB(0.5,0.5,0.5); c.setFont("Helvetica", 8); c.drawString(50, y-10, event.super_admin_message or "Sincerely thankful from the Super Admin – building a golden future together.")
     c.drawString(50, y-25, "© 2026 GoldenVow · All rights reserved.")
     c.save()
     buffer.seek(0)
@@ -942,6 +889,44 @@ def about():
     app_logo = get_app_logo(40)
     return render_template('about.html', app_logo=app_logo, support_whatsapp=SUPPORT_WHATSAPP, support_email=SUPPORT_EMAIL)
 
+# ---------- PENDING CHECK ----------
+@app.route('/check-pending')
+def check_pending():
+    secret = request.args.get('secret')
+    if secret != os.environ.get('CRON_SECRET', 'your-secret-key'):
+        return "Unauthorized", 401
+    cutoff = datetime.utcnow() - timedelta(hours=12)
+    pending = Contributor.query.filter(Contributor.status == 'pending', Contributor.created_at <= cutoff).all()
+    admin_pending = {}
+    for c in pending:
+        event = Event.query.get(c.event_id)
+        if event:
+            admin_id = event.admin_id
+            admin_pending.setdefault(admin_id, []).append(c)
+    for admin_id, contributors in admin_pending.items():
+        admin = Admin.query.get(admin_id)
+        if not admin:
+            continue
+        last_reminder = Notification.query.filter_by(admin_id=admin_id, type='pending_reminder').order_by(desc(Notification.created_at)).first()
+        if last_reminder and (datetime.utcnow() - last_reminder.created_at).total_seconds() < 21600:
+            continue
+        count = len(contributors)
+        msg = f"⏰ You have {count} pending approval{'s' if count>1 else ''} older than 12 hours. Please review them."
+        create_notification(admin_id, msg, 'pending_reminder')
+        send_email_notification("Pending Approvals Reminder", f"Dear {admin.username},\n\n{msg}\n\nLogin: {request.host_url}admin", admin.email)
+    inactive_cutoff = datetime.utcnow() - timedelta(hours=24)
+    inactive = Admin.query.filter(Admin.last_action < inactive_cutoff, Admin.is_super_admin == False).all()
+    if inactive:
+        super_admin = Admin.query.filter_by(is_super_admin=True).first()
+        if super_admin:
+            last_notify = Notification.query.filter_by(admin_id=super_admin.id, type='inactivity_alert').order_by(desc(Notification.created_at)).first()
+            if not last_notify or (datetime.utcnow() - last_notify.created_at).total_seconds() >= 21600:
+                names = [a.username for a in inactive]
+                msg = f"📞 Inactive admins (>24h): {', '.join(names)}"
+                create_notification(super_admin.id, msg, 'inactivity_alert')
+                send_email_notification("Inactive Admins Alert", msg, super_admin.email)
+    return "OK", 200
+
 # ---------- SUPER ADMIN ----------
 @app.route('/superadmin')
 def super_admin_dashboard():
@@ -953,6 +938,7 @@ def super_admin_dashboard():
         return redirect(url_for('admin_dashboard'))
     all_admins = Admin.query.filter_by(is_super_admin=False).all()
     all_events = Event.query.order_by(desc(Event.created_at)).all()
+    contact_messages = ContactMessage.query.order_by(desc(ContactMessage.created_at)).all()
     total_events = len(all_events)
     total_contributors = Contributor.query.count()
     total_contributions = db.session.query(func.sum(Contributor.pledge_amount)).scalar() or 0
@@ -964,9 +950,8 @@ def super_admin_dashboard():
                          total_events=total_events, total_contributors=total_contributors,
                          total_contributions=total_contributions, total_fees=total_fees,
                          maintenance_mode=MAINTENANCE_MODE, app_logo=app_logo,
-                         withdrawals=withdrawals,
-                         support_whatsapp=SUPPORT_WHATSAPP,
-                         support_email=SUPPORT_EMAIL)
+                         withdrawals=withdrawals, contact_messages=contact_messages,
+                         support_whatsapp=SUPPORT_WHATSAPP, support_email=SUPPORT_EMAIL)
 
 @app.route('/superadmin/remove_admin/<int:admin_id>', methods=['POST'])
 def superadmin_remove_admin(admin_id):
@@ -1014,6 +999,48 @@ def superadmin_withdrawal_action(withdrawal_id):
         withdrawal.paid_at = datetime.utcnow()
     db.session.commit()
     flash(f'✅ Withdrawal {action}d.', 'success')
+    return redirect(url_for('super_admin_dashboard'))
+
+@app.route('/superadmin/toggle_disable_event/<int:event_id>', methods=['POST'])
+def toggle_disable_event(event_id):
+    if not is_admin_logged_in() or not get_admin().is_super_admin:
+        return redirect(url_for('login'))
+    event = Event.query.get_or_404(event_id)
+    event.disabled = not event.disabled
+    event.disabled_reason = request.form.get('reason', 'Disabled by Super Admin.')
+    db.session.commit()
+    status = "disabled" if event.disabled else "enabled"
+    flash(f'✅ Event "{event.title}" has been {status}.', 'success')
+    return redirect(url_for('super_admin_dashboard'))
+
+@app.route('/superadmin/delete_event/<int:event_id>', methods=['POST'])
+def superadmin_delete_event(event_id):
+    if not is_admin_logged_in() or not get_admin().is_super_admin:
+        return redirect(url_for('login'))
+    event = Event.query.get_or_404(event_id)
+    try:
+        ChatMessage.query.filter_by(event_id=event.id).delete()
+        Notification.query.filter_by(event_id=event.id).delete()
+        contributors = Contributor.query.filter_by(event_id=event.id).all()
+        for c in contributors:
+            Payment.query.filter_by(contributor_id=c.id).delete()
+            db.session.delete(c)
+        db.session.delete(event)
+        db.session.commit()
+        flash(f'✅ Event "{event.title}" and all associated data permanently deleted.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'❌ Error deleting event: {str(e)}', 'danger')
+    return redirect(url_for('super_admin_dashboard'))
+
+@app.route('/superadmin/mark_contact_read/<int:msg_id>', methods=['POST'])
+def mark_contact_read(msg_id):
+    if not is_admin_logged_in() or not get_admin().is_super_admin:
+        return redirect(url_for('login'))
+    msg = ContactMessage.query.get_or_404(msg_id)
+    msg.is_read = True
+    db.session.commit()
+    flash('✅ Message marked as read.', 'success')
     return redirect(url_for('super_admin_dashboard'))
 
 # ---------- RUN ----------

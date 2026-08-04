@@ -1,1 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>GoldenVow – Create Event</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        body { background: #FEFCF3; font-family: 'Georgia', serif; }
+        .golden { color: #D4AF37; }
+        .navbar-brand { font-size: 1.8rem; font-weight: bold; color: #1A2A3A; }
+        .navbar-brand span { color: #D4AF37; }
+        .btn-gold { background: #D4AF37; border: none; color: #1A2A3A; font-weight: bold; }
+        .btn-gold:hover { background: #C5A02E; color: #1A2A3A; }
+        .card { border: none; box-shadow: 0 5px 20px rgba(0,0,0,0.05); border-radius: 15px; }
+        .form-label { font-weight: bold; font-size: 0.9rem; color: #1A2A3A; }
+        .section-title { font-size: 1.1rem; font-weight: bold; color: #1A2A3A; border-bottom: 2px solid #D4AF37; padding-bottom: 8px; margin-bottom: 15px; }
+        .form-control, .form-select { border: 1px solid #D4AF37; border-radius: 10px; }
+        .form-control:focus, .form-select:focus { border-color: #C5A02E; box-shadow: 0 0 0 0.2rem rgba(212,175,55,0.25); }
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-light bg-white border-bottom">
+    <div class="container">
+        <a href="/" class="navbar-brand d-flex align-items-center">
+            <span style="width:40px; height:40px; margin-right:10px;">{{ app_logo|safe }}</span>
+            <div>
+                <span style="font-size:1.8rem; font-weight:bold; color:#1A2A3A;">Golden<span style="color:#D4AF37;">Vow</span></span>
+                <span style="font-size:0.7rem; color:#6c757d; display:block; letter-spacing:2px;"><em>Tunza Mila</em></span>
+            </div>
+        </a>
+        <a href="/admin" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i> Back</a>
+    </div>
+</nav>
+<div class="container mt-4" style="max-width:700px;">
+    <h4 class="mb-3"><i class="bi bi-plus-circle golden me-2"></i> Create New Event</h4>
+    <form method="post">
+        <div class="card p-4">
+            <div class="section-title">📋 Event Details</div>
+            <div class="mb-3">
+                <label class="form-label">Event Type</label>
+                <select class="form-select" name="event_type" required>
+                    <option value="dowry">🐂 Dowry</option>
+                    <option value="burial">🕊️ Burial</option>
+                    <option value="medical">❤️ Medical</option>
+                    <option value="education">🎓 Education</option>
+                    <option value="harambee">🤝 Harambee</option>
+                    <option value="other">✦ Other</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Event Name</label>
+                <input class="form-control" name="title" placeholder="e.g., Mary's Dowry" required>
+                <div class="form-text text-muted small"><i class="bi bi-info-circle"></i> Event names must be unique across all admins.</div>
+            </div>
+            <div class="mb-3"><label class="form-label">Description</label><textarea class="form-control" name="description" rows="2"></textarea></div>
+            <div class="row">
+                <div class="col-md-6 mb-3"><label class="form-label">Target (KES)</label><input class="form-control" name="target_amount" type="number" step="0.01" required></div>
+                <div class="col-md-6 mb-3"><label class="form-label">Event Date</label><input class="form-control" name="event_date" type="date" required></div>
+            </div>
+            <div class="mb-3"><label class="form-label">Deadline</label><input class="form-control" name="deadline" type="date" required></div>
+            <div class="mb-3"><label class="form-label">Picture URL (optional)</label><input class="form-control" name="picture_url" placeholder="https://example.com/photo.jpg"></div>
 
+            <div class="section-title mt-3">💳 Payment Settings</div>
+            <p class="text-muted small">Contributors will see these details to send payments.</p>
+            <div class="mb-3"><label class="form-label">Paybill</label><input class="form-control" name="paybill" placeholder="123456"></div>
+            <div class="mb-3"><label class="form-label">M-Pesa Number</label><input class="form-control" name="mpesa_number" placeholder="0712345678"></div>
+            <div class="mb-3"><label class="form-label">Till Number</label><input class="form-control" name="till_number" placeholder="1234567"></div>
+            <div class="row">
+                <div class="col-md-4 mb-3"><label class="form-label">Bank Name</label><input class="form-control" name="bank_name" placeholder="Equity Bank"></div>
+                <div class="col-md-4 mb-3"><label class="form-label">Account Name</label><input class="form-control" name="bank_account_name" placeholder="Mary's Dowry"></div>
+                <div class="col-md-4 mb-3"><label class="form-label">Account #</label><input class="form-control" name="bank_account_number" placeholder="1234567890"></div>
+            </div>
+            <div class="mb-3"><label class="form-label">Payment Instructions</label><textarea class="form-control" name="payment_instructions" rows="2"></textarea></div>
+
+            <div class="section-title mt-3">📱 Emergency Contact</div>
+            <div class="mb-3"><label class="form-label">WhatsApp Number</label><input class="form-control" name="whatsapp_contact" placeholder="0712345678"></div>
+
+            <div class="section-title mt-3">⏳ Grace Period</div>
+            <div class="mb-3"><label class="form-label">Extra Days after Deadline</label><input class="form-control" name="grace_period" type="number" value="0" placeholder="e.g., 7"></div>
+
+            <div class="section-title mt-3">📝 Super Admin Message (optional)</div>
+            <div class="mb-3"><textarea class="form-control" name="super_admin_message" rows="2" placeholder="A thank you message from the Super Admin to appear on receipts."></textarea></div>
+
+            <button type="submit" class="btn btn-gold w-100 py-2 mt-3"><i class="bi bi-check-circle"></i> Create Event</button>
+        </div>
+    </form>
+</div>
+</body>
+</html>

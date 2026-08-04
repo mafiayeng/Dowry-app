@@ -368,7 +368,6 @@ def register():
         email = request.form['email']
         phone = request.form.get('phone', '')
 
-        # --- UNIQUE CHECKS ---
         if Admin.query.filter_by(username=username).first():
             flash('⚠️ Username already taken. Please choose another.', 'danger')
             return redirect(url_for('register', event_token=event_token))
@@ -381,7 +380,6 @@ def register():
             flash('⚠️ Phone number already registered. Please use a different number.', 'danger')
             return redirect(url_for('register', event_token=event_token))
 
-        # --- Create account ---
         hashed = hash_password(password)
         is_super = Admin.query.count() == 0
         admin = Admin(username=username, password_hash=hashed, email=email, phone=phone, is_super_admin=is_super)
@@ -869,7 +867,6 @@ def weekly_receipt(token):
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
-    # PDF generation (same as before)
     c.setFillColorRGB(1,1,1); c.rect(0,0,width,height,fill=1)
     c.setStrokeColorRGB(0.83,0.69,0.22); c.setLineWidth(3); c.rect(40,40,width-80,height-80)
     c.setFillColorRGB(0.83,0.69,0.22); c.setFont("Helvetica-Bold", 24); c.drawString(200, height-80, "✦ GOLDENVOW ✦")

@@ -1,52 +1,9 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>GoldenVow – Admin</title>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <style>
-        body { background: #FEFCF3; font-family: 'Georgia', serif; }
-        .golden { color: #D4AF37; }
-        .navbar-brand { font-size: 1.8rem; font-weight: bold; color: #1A2A3A; }
-        .navbar-brand span { color: #D4AF37; }
-        .card { border: none; box-shadow: 0 5px 20px rgba(0,0,0,0.05); border-radius: 15px; }
-        .btn-gold { background: #D4AF37; border: none; color: #1A2A3A; font-weight: bold; }
-        .btn-gold:hover { background: #C5A02E; color: #1A2A3A; }
-        .badge-gold { background: #D4AF37; color: #1A2A3A; }
-        .badge-locked { background: #C62828; color: white; }
-        .stat-number { font-size: 1.2rem; font-weight: bold; color: #1A2A3A; }
-        .stat-label { color: #6c757d; font-size: 0.8rem; }
-    </style>
-</head>
-<body>
-<nav class="navbar navbar-light bg-white border-bottom">
-    <div class="container">
-        <a href="/" class="navbar-brand d-flex align-items-center">
-            <span style="width:40px; height:40px; margin-right:10px;">{{ app_logo|safe }}</span>
-            <div>
-                <span style="font-size:1.8rem; font-weight:bold; color:#1A2A3A;">Golden<span style="color:#D4AF37;">Vow</span></span>
-                <span style="font-size:0.7rem; color:#6c757d; display:block; letter-spacing:2px;"><em>Tunza Mila</em></span>
-            </div>
-        </a>
-        <div>
-            <a href="/notifications" class="btn btn-sm position-relative me-2">
-                <i class="bi bi-bell" style="font-size:1.5rem;"></i>
-                {% if unread > 0 %}<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">{{ unread }}</span>{% endif %}
-            </a>
-            <span class="text-muted me-2"><i class="bi bi-person-circle"></i> {{ admin.username }}</span>
-            {% if admin.is_super_admin %}
-                <a href="/superadmin" class="btn btn-sm btn-outline-gold me-2"><i class="bi bi-star"></i> Super</a>
-            {% endif %}
-            <a href="/logout" class="btn btn-sm btn-outline-danger"><i class="bi bi-box-arrow-right"></i></a>
-        </div>
-    </div>
-</nav>
-<div class="container mt-4">
-
+{% extends "base.html" %}
+{% block title %}Admin Dashboard – GoldenVow{% endblock %}
+{% block content %}
+<div class="container">
     <!-- Help Button -->
-    <div class="card p-2 mb-3 border border-warning" style="background: #fff8e1;">
+    <div class="card p-2 mb-3 border border-warning" style="background: var(--bg-primary);">
         <div class="d-flex justify-content-between align-items-center">
             <span><i class="bi bi-headset golden"></i> <strong>Need help?</strong> Contact Super Admin</span>
             <div>
@@ -56,8 +13,7 @@
         </div>
     </div>
 
-    <!-- 🆕 MONITORING MODE NOTE (for Super Admin) -->
-    {% if admin.is_super_admin %}
+    {% if get_admin().is_super_admin %}
     <div class="alert alert-info">
         <i class="bi bi-eye"></i> You are in <strong>Monitoring Mode</strong>. You can view all events but cannot create or manage them. Go to the <a href="/superadmin" class="alert-link">Super Admin Panel</a> for full system oversight.
     </div>
@@ -65,7 +21,7 @@
 
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h4><i class="bi bi-grid-1x2-fill golden me-2"></i> Dashboard</h4>
-        {% if not admin.is_super_admin %}
+        {% if not get_admin().is_super_admin %}
             <a href="/admin/create" class="btn btn-gold"><i class="bi bi-plus-circle"></i> Create Event</a>
         {% endif %}
     </div>
@@ -76,13 +32,13 @@
             <div>
                 <h6><i class="bi bi-graph-up golden"></i> Referral Program</h6>
                 <p class="text-muted small mb-0">
-                    <strong>Your Referral Code:</strong> <span class="badge bg-dark">{{ admin.referral_code }}</span>
-                    <br><strong>Referrals:</strong> {{ admin.referral_count }}
+                    <strong>Your Referral Code:</strong> <span class="badge bg-dark">{{ get_admin().referral_code }}</span>
+                    <br><strong>Referrals:</strong> {{ get_admin().referral_count }}
                     <br><strong>Your Fee:</strong>
-                    <span class="badge {% if admin.referral_count >= 1 %}bg-success{% else %}bg-secondary{% endif %}">
-                        {{ get_fee_percentage(admin.id) }}%
+                    <span class="badge {% if get_admin().referral_count >= 1 %}bg-success{% else %}bg-secondary{% endif %}">
+                        {{ get_fee_percentage(get_admin().id) }}%
                     </span>
-                    {% if admin.referral_count >= 1 %}<span class="badge bg-success"><i class="bi bi-star-fill"></i> Discount Active!</span>{% endif %}
+                    {% if get_admin().referral_count >= 1 %}<span class="badge bg-success"><i class="bi bi-star-fill"></i> Discount Active!</span>{% endif %}
                 </p>
                 <p class="text-muted small" style="font-size:0.7rem;">
                     <strong>Tiers:</strong> 1→1.8% | 3→1.6% | 5→1.4% | 10+→1.2%
@@ -90,7 +46,7 @@
             </div>
             <div>
                 <button class="btn btn-sm btn-gold" onclick="copyReferralLink()"><i class="bi bi-clipboard"></i> Copy Link</button>
-                <br><small class="text-muted">Share: <span id="referralLink" style="font-size:0.7rem;">{{ request.host_url }}register?ref={{ admin.referral_code }}</span></small>
+                <br><small class="text-muted">Share: <span id="referralLink" style="font-size:0.7rem;">{{ request.host_url }}register?ref={{ get_admin().referral_code }}</span></small>
             </div>
         </div>
     </div>
@@ -122,11 +78,15 @@
         {% endfor %}
     </div>
 </div>
+
 <script>
 function copyReferralLink() {
     const link = document.getElementById('referralLink').innerText;
     navigator.clipboard.writeText(link).then(() => alert('✅ Referral link copied!'));
 }
 </script>
-</body>
-</html>
+<style>
+.stat-number { font-size: 1.2rem; font-weight: bold; color: var(--text-primary); }
+.stat-label { color: var(--text-secondary); font-size: 0.8rem; }
+</style>
+{% endblock %}

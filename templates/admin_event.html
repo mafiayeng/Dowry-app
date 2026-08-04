@@ -11,7 +11,6 @@
             {% if is_locked %}<span class="badge bg-danger"><i class="bi bi-lock"></i> Locked</span>{% else %}<span class="badge bg-success"><i class="bi bi-check-circle"></i> Active</span>{% endif %}
         </div>
     </div>
-
     <div class="card p-3 mb-3" style="background: var(--bg-primary); border:1px solid var(--gold);">
         <div class="row">
             <div class="col-md-6">
@@ -28,158 +27,70 @@
                 {% endif %}
                 {% if is_locked %}
                 <div class="alert alert-danger mt-2"><i class="bi bi-exclamation-triangle"></i> LOCKED. Fee not paid.</div>
-                <form method="post" action="/admin/mark_fee_paid/{{ event.id }}">
-                    <button class="btn btn-gold"><i class="bi bi-check-circle"></i> Mark Fee as Paid</button>
-                </form>
-                {% else %}
-                <div class="alert alert-success mt-2"><i class="bi bi-check-circle"></i> Fee is paid or not yet due.</div>
-                {% endif %}
+                <form method="post" action="/admin/mark_fee_paid/{{ event.id }}"><button class="btn btn-gold"><i class="bi bi-check-circle"></i> Mark Fee as Paid</button></form>
+                {% else %}<div class="alert alert-success mt-2"><i class="bi bi-check-circle"></i> Fee is paid or not yet due.</div>{% endif %}
             </div>
         </div>
     </div>
-
     <div class="row mb-4">
         <div class="col-md-3"><div class="card p-3 text-center"><div class="stat-number">{{ contributors|length }}</div><div class="stat-label">Contributors</div></div></div>
         <div class="col-md-3"><div class="card p-3 text-center"><div class="stat-number">KES {{ total_contributions|round(0) }}</div><div class="stat-label">Total Raised</div></div></div>
         <div class="col-md-3"><div class="card p-3 text-center"><div class="stat-number">{{ pending_count }}</div><div class="stat-label">Pending</div></div></div>
         <div class="col-md-3"><div class="card p-3 text-center"><div class="stat-number">KES {{ total_fees|round(0) }}</div><div class="stat-label">Fees Earned</div></div></div>
     </div>
-
     <div class="card p-3 mb-4">
         <h6><i class="bi bi-link-45deg golden"></i> Share Link</h6>
-        <div class="input-group">
-            <input class="form-control" id="shareLink" value="{{ request.host_url }}e/{{ event.token }}" readonly>
-            <button class="btn btn-gold" onclick="copyLink()"><i class="bi bi-clipboard"></i> Copy</button>
-        </div>
+        <div class="input-group"><input class="form-control" id="shareLink" value="{{ request.host_url }}e/{{ event.token }}" readonly><button class="btn btn-gold" onclick="copyLink()"><i class="bi bi-clipboard"></i> Copy</button></div>
         <div class="mt-2">
             <form method="post" action="/admin/send_link_sms/{{ event.id }}" class="d-inline">
-                <div class="input-group">
-                    <input class="form-control" name="phone" placeholder="Phone to send link" required>
-                    <button class="btn btn-outline-secondary"><i class="bi bi-whatsapp"></i> Share</button>
-                </div>
+                <div class="input-group"><input class="form-control" name="phone" placeholder="Phone to send link" required><button class="btn btn-outline-secondary"><i class="bi bi-whatsapp"></i> Share</button></div>
             </form>
         </div>
     </div>
-
-    <!-- Early Receipt Generator -->
     <div class="card p-3 mb-3 border border-warning">
         <h6><i class="bi bi-clock-history golden"></i> Generate Early Receipt</h6>
         <form method="post" action="/admin/generate_early_receipt/{{ event.id }}" class="row g-2">
-            <div class="col-md-4">
-                <select class="form-select" name="contributor_id" required>
-                    <option value="">Select Contributor</option>
-                    {% for c in contributors %}
-                    <option value="{{ c.id }}">{{ c.name }} (KES {{ c.paid_amount }})</option>
-                    {% endfor %}
-                </select>
-            </div>
+            <div class="col-md-4"><select class="form-select" name="contributor_id" required><option value="">Select Contributor</option>{% for c in contributors %}<option value="{{ c.id }}">{{ c.name }} (KES {{ c.paid_amount }})</option>{% endfor %}</select></div>
             <div class="col-md-3"><input class="form-control" name="start_date" type="date" required></div>
             <div class="col-md-3"><input class="form-control" name="end_date" type="date" required></div>
             <div class="col-md-2"><button class="btn btn-gold w-100"><i class="bi bi-download"></i> Generate</button></div>
         </form>
     </div>
-
-    <!-- Contributors Table -->
     <h5 class="mb-3"><i class="bi bi-people golden"></i> Contributors</h5>
     <div class="table-responsive">
         <table class="table table-striped">
-            <thead>
-                <tr><th>Name</th><th>Phone</th><th>Pledged</th><th>Fee</th><th>Net</th><th>Paid</th><th>Status</th><th>PIN</th><th>Action</th></tr>
-            </thead>
+            <thead><tr><th>Name</th><th>Phone</th><th>Pledged</th><th>Fee</th><th>Net</th><th>Paid</th><th>Status</th><th>PIN</th><th>Action</th></tr></thead>
             <tbody>
                 {% for c in contributors %}
                 <tr>
-                    <td>{{ c.name }}</td>
-                    <td>{{ c.phone }}</td>
-                    <td>KES {{ c.pledge_amount|round(2) }}</td>
-                    <td>KES {{ c.fee_amount|round(2) }}</td>
-                    <td>KES {{ c.net_contribution|round(2) }}</td>
+                    <td>{{ c.name }}</td><td>{{ c.phone }}</td>
+                    <td>KES {{ c.pledge_amount|round(2) }}</td><td>KES {{ c.fee_amount|round(2) }}</td><td>KES {{ c.net_contribution|round(2) }}</td>
                     <td>KES {{ c.paid_amount|round(2) }}</td>
                     <td><span class="badge bg-{% if c.status=='completed' %}success{% elif c.status=='approved' %}info{% elif c.status=='pending' %}warning{% else %}danger{% endif %}">{{ c.status }}</span></td>
                     <td><span id="pin_{{ c.id }}">{{ c.pin }}</span> <i class="bi bi-clipboard copy-btn" onclick="copyText('pin_{{ c.id }}')"></i></td>
                     <td>
                         <form method="post" action="/admin/update_contributor/{{ c.id }}" class="d-inline">
-                            {% if c.status == 'pending' %}
-                            <button name="action" value="approve" class="btn btn-sm btn-success"><i class="bi bi-check"></i></button>
-                            <button name="action" value="decline" class="btn btn-sm btn-danger"><i class="bi bi-x"></i></button>
-                            {% endif %}
-                            <div class="input-group input-group-sm mt-1">
-                                <input type="number" step="0.01" name="amount" placeholder="Add payment" class="form-control">
-                                <button name="action" value="add_payment" class="btn btn-outline-gold btn-sm"><i class="bi bi-plus"></i></button>
-                            </div>
+                            {% if c.status == 'pending' %}<button name="action" value="approve" class="btn btn-sm btn-success"><i class="bi bi-check"></i></button> <button name="action" value="decline" class="btn btn-sm btn-danger"><i class="bi bi-x"></i></button>{% endif %}
+                            <div class="input-group input-group-sm mt-1"><input type="number" step="0.01" name="amount" placeholder="Add payment" class="form-control"><button name="action" value="add_payment" class="btn btn-outline-gold btn-sm"><i class="bi bi-plus"></i></button></div>
                         </form>
-                        {% if c.status == 'completed' %}
-                        <a href="/admin/receipt/{{ c.id }}" target="_blank" class="btn btn-sm btn-info mt-1"><i class="bi bi-file-text"></i> Receipt</a>
-                        {% endif %}
+                        {% if c.status == 'completed' %}<a href="/admin/receipt/{{ c.id }}" target="_blank" class="btn btn-sm btn-info mt-1"><i class="bi bi-file-text"></i> Receipt</a>{% endif %}
                     </td>
                 </tr>
-                {% else %}
-                <tr><td colspan="9" class="text-center text-muted">No contributors yet.</td></tr>
-                {% endfor %}
+                {% else %}<tr><td colspan="9" class="text-center text-muted">No contributors yet.</td></tr>{% endfor %}
             </tbody>
         </table>
     </div>
-    <div class="mt-3">
-        <a href="/admin/download_all_receipts/{{ event.id }}" class="btn btn-gold"><i class="bi bi-download"></i> Download All Receipts (ZIP)</a>
-    </div>
-
-    <!-- Chat -->
+    <div class="mt-3"><a href="/admin/download_all_receipts/{{ event.id }}" class="btn btn-gold"><i class="bi bi-download"></i> Download All Receipts (ZIP)</a></div>
     <h5 class="mt-4"><i class="bi bi-chat-dots golden"></i> Chat</h5>
-    <div class="chat-box" id="chatBox">
-        {% for m in messages %}
-        <div class="d-flex {% if m.sender_type == 'admin' %}justify-content-end{% endif %}">
-            <div class="chat-bubble {% if m.sender_type == 'admin' %}self{% endif %}">
-                <strong>{{ m.sender_name }}</strong><br>
-                {{ m.message }}
-                <div class="text-muted" style="font-size:0.6rem;">{{ m.timestamp.strftime('%H:%M') }}</div>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-    <div class="input-group mt-2">
-        <input type="text" id="chatInput" class="form-control" placeholder="Type as Admin...">
-        <button class="btn btn-gold" onclick="sendChat()"><i class="bi bi-send"></i></button>
-    </div>
+    <div class="chat-box" id="chatBox">{% for m in messages %}<div class="d-flex {% if m.sender_type == 'admin' %}justify-content-end{% endif %}"><div class="chat-bubble {% if m.sender_type == 'admin' %}self{% endif %}"><strong>{{ m.sender_name }}</strong><br>{{ m.message }}<div class="text-muted" style="font-size:0.6rem;">{{ m.timestamp.strftime('%H:%M') }}</div></div></div>{% endfor %}</div>
+    <div class="input-group mt-2"><input type="text" id="chatInput" class="form-control" placeholder="Type as Admin..."><button class="btn btn-gold" onclick="sendChat()"><i class="bi bi-send"></i></button></div>
 </div>
-
 <script>
-function copyLink() {
-    const inp = document.getElementById('shareLink');
-    inp.select();
-    navigator.clipboard.writeText(inp.value).then(() => alert('✅ Copied!'));
-}
-function copyText(id) {
-    const text = document.getElementById(id).innerText;
-    navigator.clipboard.writeText(text).then(() => alert('✅ Copied: ' + text));
-}
-function loadChat() {
-    fetch('/api/chat/{{ event.id }}')
-        .then(r => r.json())
-        .then(data => {
-            const box = document.getElementById('chatBox');
-            box.innerHTML = data.map(m => `
-                <div class="d-flex ${m.sender_type == 'admin' ? 'justify-content-end' : ''}">
-                    <div class="chat-bubble ${m.sender_type == 'admin' ? 'self' : ''}">
-                        <strong>${m.sender_name}</strong><br>
-                        ${m.message}
-                        <div class="text-muted" style="font-size:0.6rem;">${m.timestamp}</div>
-                    </div>
-                </div>
-            `).join('');
-            box.scrollTop = box.scrollHeight;
-        });
-}
-setInterval(loadChat, 5000);
-loadChat();
-function sendChat() {
-    const input = document.getElementById('chatInput');
-    if (!input.value.trim()) return;
-    fetch('/api/chat/{{ event.id }}', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sender_name: 'Admin', sender_type: 'admin', message: input.value })
-    }).then(() => { input.value = ''; loadChat(); });
-}
+function copyLink(){const inp=document.getElementById('shareLink');inp.select();navigator.clipboard.writeText(inp.value).then(()=>alert('✅ Copied!'));}
+function copyText(id){const text=document.getElementById(id).innerText;navigator.clipboard.writeText(text).then(()=>alert('✅ Copied: '+text));}
+function loadChat(){fetch('/api/chat/{{ event.id }}').then(r=>r.json()).then(data=>{const box=document.getElementById('chatBox');box.innerHTML=data.map(m=>`<div class="d-flex ${m.sender_type=='admin'?'justify-content-end':''}"><div class="chat-bubble ${m.sender_type=='admin'?'self':''}"><strong>${m.sender_name}</strong><br>${m.message}<div class="text-muted" style="font-size:0.6rem;">${m.timestamp}</div></div></div>`).join('');box.scrollTop=box.scrollHeight;});}
+setInterval(loadChat,5000);loadChat();
+function sendChat(){const input=document.getElementById('chatInput');if(!input.value.trim())return;fetch('/api/chat/{{ event.id }}',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sender_name:'Admin',sender_type:'admin',message:input.value})}).then(()=>{input.value='';loadChat();});}
 </script>
 <style>
 .stat-number { font-size: 1.8rem; font-weight: bold; color: var(--text-primary); }

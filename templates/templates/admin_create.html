@@ -29,7 +29,8 @@
             </div>
             <div class="mb-3"><label class="form-label">Deadline</label><input class="form-control" name="deadline" type="date" required></div>
             <div class="mb-3"><label class="form-label">Picture URL (optional)</label><input class="form-control" name="picture_url" placeholder="https://example.com/photo.jpg"></div>
-
+            <div class="section-title mt-3">🖼️ Event Background</div>
+            <div class="mb-3"><label class="form-label">Background Image URL (optional)</label><input class="form-control" name="background_image_url" placeholder="https://your-image-url.jpg"><div class="form-text">Paste a direct image link (Google Photos, Imgur, etc.) to set as background for the event page.</div></div>
             <div class="section-title mt-3">💳 Payment Settings</div>
             <p class="text-muted small">Contributors will see these details to send payments.</p>
             <div class="mb-3"><label class="form-label">Paybill</label><input class="form-control" name="paybill" placeholder="123456"></div>
@@ -41,16 +42,12 @@
                 <div class="col-md-4 mb-3"><label class="form-label">Account #</label><input class="form-control" name="bank_account_number" placeholder="1234567890"></div>
             </div>
             <div class="mb-3"><label class="form-label">Payment Instructions</label><textarea class="form-control" name="payment_instructions" rows="2"></textarea></div>
-
             <div class="section-title mt-3">📱 Emergency Contact</div>
             <div class="mb-3"><label class="form-label">WhatsApp Number</label><input class="form-control" name="whatsapp_contact" placeholder="0712345678"></div>
-
             <div class="section-title mt-3">⏳ Grace Period</div>
             <div class="mb-3"><label class="form-label">Extra Days after Deadline</label><input class="form-control" name="grace_period" type="number" value="0" placeholder="e.g., 7"></div>
-
             <div class="section-title mt-3">📝 Super Admin Message (optional)</div>
             <div class="mb-3"><textarea class="form-control" name="super_admin_message" rows="2" placeholder="A thank you message from the Super Admin to appear on receipts."></textarea></div>
-
             <button type="submit" class="btn btn-gold w-100 py-2 mt-3"><i class="bi bi-check-circle"></i> Create Event</button>
         </div>
     </form>

@@ -1,38 +1,95 @@
-{% extends "base.html" %}
-{% block title %}Join {{ event.title }} – GoldenVow{% endblock %}
-{% block head %}
-<style>
-.landing-card { background: var(--bg-card); border-radius: 40px; padding: 50px 40px; box-shadow: var(--shadow); border: 1px solid var(--border-color); }
-.event-details { background: var(--bg-secondary); border-radius: 16px; padding: 15px 20px; margin: 20px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.event-details .item { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; }
-.event-details .item i { color: var(--gold); width: 20px; }
-</style>
-{% endblock %}
-{% block content %}
-<div class="container d-flex justify-content-center align-items-center" style="min-height:75vh;">
-    <div class="col-md-6">
-        <div class="landing-card">
-            <div class="text-center">
-                <div style="font-size:3rem; color:var(--gold);">✦</div>
-                <h2 style="font-family:'Playfair Display',serif; color:var(--text-primary);">Golden<span style="color:var(--gold);">Vow</span></h2>
-                <p style="color:var(--text-secondary); font-size:0.8rem; letter-spacing:2px;"><em>Tunza Mila</em> · Nurture Tradition</p>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GoldenVow – Building a golden future together</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body {
+            background: linear-gradient(135deg, #0D1B2A 0%, #1A2A3A 50%, #2C3E50 100%);
+            min-height: 100vh;
+            font-family: 'Inter', sans-serif;
+            color: white;
+            overflow-x: hidden;
+        }
+        .hero { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 40px 20px; text-align: center; }
+        .hero-content { max-width: 700px; }
+        .logo-ring { display: inline-block; animation: float 6s ease-in-out infinite; }
+        @keyframes float { 0% { transform: translateY(0); } 50% { transform: translateY(-15px); } 100% { transform: translateY(0); } }
+        .brand-name { font-family: 'Playfair Display', serif; font-size: 4.5rem; font-weight: 700; color: #D4AF37; letter-spacing: 4px; text-shadow: 0 0 40px rgba(212,175,55,0.3); }
+        .brand-sub { font-size: 1.2rem; color: #C8B8A8; letter-spacing: 6px; font-style: italic; }
+        .motto {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            font-weight: 400;
+            color: #D4AF37;
+            letter-spacing: 4px;
+            margin-top: 10px;
+            text-shadow: 0 0 20px rgba(212,175,55,0.15);
+        }
+        .btn-gold { background: #D4AF37; border: none; color: #1A2A3A; font-weight: 600; padding: 14px 40px; border-radius: 60px; transition: 0.3s; font-size: 1.1rem; }
+        .btn-gold:hover { background: #E5C54A; transform: translateY(-3px); box-shadow: 0 12px 30px rgba(212,175,55,0.4); }
+        .btn-outline-gold { background: transparent; border: 2px solid #D4AF37; color: #D4AF37; font-weight: 600; padding: 14px 40px; border-radius: 60px; transition: 0.3s; font-size: 1.1rem; }
+        .btn-outline-gold:hover { background: #D4AF37; color: #1A2A3A; transform: translateY(-3px); }
+        .features { margin-top: 50px; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; }
+        .feature-item { background: rgba(255,255,255,0.06); backdrop-filter: blur(10px); border-radius: 20px; padding: 25px 15px; border: 1px solid rgba(212,175,55,0.15); transition: 0.3s; }
+        .feature-item:hover { border-color: #D4AF37; transform: translateY(-5px); }
+        .feature-item i { font-size: 2.5rem; color: #D4AF37; margin-bottom: 12px; }
+        .feature-item h6 { font-weight: 600; font-size: 1rem; }
+        .feature-item p { font-size: 0.8rem; color: #B0A8A0; margin: 0; }
+        .bg-particles { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: -1; }
+        .bg-particles span { position: absolute; border-radius: 50%; background: rgba(212,175,55,0.06); animation: floatParticle 20s infinite ease-in-out; }
+        .bg-particles span:nth-child(1) { width: 300px; height: 300px; top: -50px; left: -50px; }
+        .bg-particles span:nth-child(2) { width: 400px; height: 400px; bottom: -100px; right: -100px; animation-delay: -7s; }
+        .bg-particles span:nth-child(3) { width: 200px; height: 200px; top: 40%; left: 60%; animation-delay: -14s; }
+        @keyframes floatParticle {
+            0% { transform: translate(0,0) scale(1); opacity: 0.3; }
+            33% { transform: translate(30px,-30px) scale(1.1); opacity: 0.6; }
+            66% { transform: translate(-20px,20px) scale(0.9); opacity: 0.4; }
+            100% { transform: translate(0,0) scale(1); opacity: 0.3; }
+        }
+        @media (max-width: 576px) {
+            .brand-name { font-size: 3rem; }
+            .brand-sub { font-size: 0.9rem; }
+            .motto { font-size: 1.2rem; letter-spacing: 2px; }
+            .hero { padding: 20px; }
+            .features { grid-template-columns: 1fr 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-particles"><span></span><span></span><span></span></div>
+    <div class="hero">
+        <div class="hero-content">
+            <div class="logo-ring">
+                <svg width="120" height="120" viewBox="0 0 120 120">
+                    <circle cx="60" cy="60" r="55" stroke="#D4AF37" stroke-width="3" fill="none" />
+                    <circle cx="60" cy="60" r="45" stroke="#D4AF37" stroke-width="1.5" fill="none" />
+                    <polygon points="60,25 75,60 60,95 45,60" fill="#D4AF37" opacity="0.9" />
+                    <polygon points="60,35 70,60 60,85 50,60" fill="#FFF8DC" opacity="0.8" />
+                    <text x="25" y="25" fill="#D4AF37" font-size="12">✦</text>
+                    <text x="95" y="25" fill="#D4AF37" font-size="12">✦</text>
+                    <text x="25" y="100" fill="#D4AF37" font-size="10">✧</text>
+                    <text x="95" y="100" fill="#D4AF37" font-size="10">✧</text>
+                </svg>
             </div>
-            <div class="text-center mt-3">
-                <div style="width:80px; height:80px; margin:0 auto;">{{ logo_svg|safe }}</div>
-                <h4 class="mt-2">{{ event.title }}</h4>
-                <p class="text-muted">{{ event.description }}</p>
-                <span class="badge bg-light text-muted">{{ event.event_type|capitalize }}</span>
-                <div class="event-details">
-                    <div class="item"><i class="bi bi-coin"></i> <strong>Target:</strong> KES {{ event.target_amount|round(0) }}</div>
-                    <div class="item"><i class="bi bi-calendar"></i> <strong>Deadline:</strong> {{ event.deadline.strftime('%d %b %Y') }}</div>
-                    <div class="item"><i class="bi bi-calendar-event"></i> <strong>Event:</strong> {{ event.event_date.strftime('%d %b %Y') }}</div>
-                    <div class="item"><i class="bi bi-people"></i> <strong>Contributors:</strong> {{ contributors|length }}</div>
-                </div>
-                <p class="text-muted" style="font-size:0.9rem;"><i class="bi bi-lock text-warning"></i> You need an account to join this event.</p>
-                <a href="{{ url_for('login', event_token=event.token) }}" class="btn btn-outline-gold w-100 mb-2"><i class="bi bi-box-arrow-in-right"></i> Login</a>
-                <a href="{{ url_for('register', event_token=event.token) }}" class="btn btn-gold w-100"><i class="bi bi-person-plus"></i> Create Account & Join</a>
+            <h1 class="brand-name mt-3">Golden<span style="color:#FEFCF3;">Vow</span></h1>
+            <p class="brand-sub">Building a golden future together</p>
+            <div class="motto">Honoring Tradition · Embracing Tomorrow</div>
+            <div class="mt-4">
+                <a href="/login" class="btn btn-gold me-3 mb-2"><i class="bi bi-box-arrow-in-right"></i> Login</a>
+                <a href="/register" class="btn btn-outline-gold mb-2"><i class="bi bi-person-plus"></i> Create Account</a>
+            </div>
+            <div class="features">
+                <div class="feature-item"><i class="bi bi-heart"></i><h6>Love & Tradition</h6><p>Honoring cultural values</p></div>
+                <div class="feature-item"><i class="bi bi-shield-lock"></i><h6>Secure & Private</h6><p>Your contributions are safe</p></div>
+                <div class="feature-item"><i class="bi bi-receipt"></i><h6>Instant Receipts</h6><p>Professional PDF receipts</p></div>
             </div>
         </div>
     </div>
-</div>
-{% endblock %}
+</body>
+</html>

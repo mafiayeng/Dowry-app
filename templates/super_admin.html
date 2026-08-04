@@ -33,25 +33,61 @@ body { background: #FEFCF3; font-family: 'Georgia', serif; }
 <div class="container mt-4">
     <h4><i class="bi bi-speedometer2 golden"></i> Super Admin Dashboard</h4>
     <p class="text-muted">Full control and oversight of the platform.</p>
+    
+    <!-- Monitoring Alert -->
+    <div class="alert alert-primary">
+        <i class="bi bi-binoculars"></i> <strong>Super Admin Monitoring Dashboard</strong> – You have read‑only access to all events and full control over system settings.
+    </div>
+
     <div class="card p-2 mb-3 bg-light"><div class="d-flex justify-content-between align-items-center"><span><i class="bi bi-headset golden"></i> Need help?</span><div><a href="https://wa.me/{{ support_whatsapp }}" target="_blank" class="btn btn-sm btn-success me-2"><i class="bi bi-whatsapp"></i> WhatsApp</a><a href="mailto:{{ support_email }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-envelope"></i> Email</a></div></div></div>
+
     <div class="row mb-4">
         <div class="col-md-3"><div class="card p-3 text-center"><div class="stat-number">{{ total_events }}</div><div class="stat-label">Total Events</div></div></div>
         <div class="col-md-3"><div class="card p-3 text-center"><div class="stat-number">{{ total_contributors }}</div><div class="stat-label">Contributors</div></div></div>
         <div class="col-md-3"><div class="card p-3 text-center"><div class="stat-number">KES {{ total_contributions|round(0) }}</div><div class="stat-label">Total Raised</div></div></div>
         <div class="col-md-3"><div class="card p-3 text-center"><div class="stat-number golden">KES {{ total_fees|round(0) }}</div><div class="stat-label">Total Fees Earned</div></div></div>
     </div>
+
     <!-- Manage Admins -->
     <div class="card p-4 mb-4"><h5><i class="bi bi-people golden"></i> Manage Admins</h5><div class="table-responsive"><table class="table table-striped"><thead><tr><th>Username</th><th>Email</th><th>Referral Code</th><th>Referred By</th><th>Referrals</th><th>Fee %</th><th>Action</th></tr></thead><tbody>
         {% for a in admins %}<tr><td>{{ a.username }}</td><td>{{ a.email }}</td><td><code>{{ a.referral_code }}</code></td><td>{{ a.referred_by or 'None' }}</td><td>{{ a.referral_count }}</td><td>{% set fee = get_fee_percentage(a.id) %}<span class="badge {% if fee < 2 %}bg-success{% else %}bg-secondary{% endif %}">{{ fee }}%</span></td><td><form method="post" action="/superadmin/remove_admin/{{ a.id }}" onsubmit="return confirm('Remove admin?');"><button class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></button></form></td></tr>{% else %}<tr><td colspan="7" class="text-center text-muted">No other admins.</td></tr>{% endfor %}
     </tbody></table></div></div>
+
     <!-- All Events -->
-    <div class="card p-4 mb-4"><h5><i class="bi bi-calendar-event golden"></i> All Events (Read-Only)</h5><div class="table-responsive"><table class="table table-hover"><thead><tr><th>Event</th><th>Admin</th><th>Type</th><th>Raised</th><th>Contributors</th><th>Status</th></tr></thead><tbody>
-        {% for ev in all_events %}<tr><td>{{ ev.title }}</td><td>{{ Admin.query.get(ev.admin_id).username }}</td><td><span class="badge bg-light">{{ ev.event_type|capitalize }}</span></td><td>KES {{ get_event_total_contributions(ev.id)|round(0) }}</td><td>{{ Contributor.query.filter_by(event_id=ev.id).count() }}</td><td>{% if get_page_lock_status(ev) %}<span class="badge badge-locked"><i class="bi bi-lock"></i> Locked</span>{% else %}<span class="badge badge-gold"><i class="bi bi-check-circle"></i> Active</span>{% endif %}</td></tr>{% else %}<tr><td colspan="6" class="text-center text-muted">No events yet.</td></tr>{% endfor %}
+    <div class="card p-4 mb-4"><h5><i class="bi bi-calendar-event golden"></i> All Events (Read-Only)</h5><div class="table-responsive"><table class="table table-hover"><thead><tr><th>Event</th><th>Admin</th><th>Type</th><th>Raised</th><th>Contributors</th><th>Status</th><th>Action</th></tr></thead><tbody>
+        {% for ev in all_events %}<tr><td>{{ ev.title }}</td><td>{{ Admin.query.get(ev.admin_id).username }}</td><td><span class="badge bg-light">{{ ev.event_type|capitalize }}</span></td><td>KES {{ get_event_total_contributions(ev.id)|round(0) }}</td><td>{{ Contributor.query.filter_by(event_id=ev.id).count() }}</td><td>{% if get_page_lock_status(ev) %}<span class="badge badge-locked"><i class="bi bi-lock"></i> Locked</span>{% else %}<span class="badge badge-gold"><i class="bi bi-check-circle"></i> Active</span>{% endif %}</td>
+        <td>
+            <!-- 🔥 DISABLE/ENABLE BUTTON -->
+            <form method="post" action="/superadmin/toggle_disable_event/{{ ev.id }}" class="d-inline">
+                <input type="text" name="reason" placeholder="Reason" style="width:120px; display:inline-block; font-size:0.7rem; padding:2px 4px;">
+                <button class="btn btn-sm {% if ev.disabled %}btn-success{% else %}btn-warning{% endif %}" title="Disable/Enable event">
+                    {% if ev.disabled %}Enable{% else %}Disable{% endif %}
+                </button>
+            </form>
+            <!-- 🔥 DELETE BUTTON -->
+            <form method="post" action="/superadmin/delete_event/{{ ev.id }}" class="d-inline" onsubmit="return confirm('⚠️ Permanently delete this event and ALL data? This cannot be undone!');">
+                <button class="btn btn-sm btn-danger" title="Permanently Delete"><i class="bi bi-trash"></i></button>
+            </form>
+        </td></tr>{% else %}<tr><td colspan="7" class="text-center text-muted">No events yet.</td></tr>{% endfor %}
     </tbody></table></div></div>
+
+    <!-- Contact Messages -->
+    <div class="card p-4 mb-4"><h5><i class="bi bi-envelope golden"></i> Contact Messages</h5><div class="table-responsive"><table class="table table-striped"><thead><tr><th>Name</th><th>Email</th><th>Subject</th><th>Message</th><th>Status</th><th>Action</th></tr></thead><tbody>
+        {% for msg in contact_messages %}<tr><td>{{ msg.name }}</td><td>{{ msg.email }}</td><td><span class="badge bg-info">{{ msg.subject }}</span></td><td>{{ msg.message[:60] }}{% if msg.message|length > 60 %}...{% endif %}</td><td>{% if msg.is_read %}<span class="badge bg-success">Read</span>{% else %}<span class="badge bg-warning">Unread</span>{% endif %}</td>
+        <td>
+            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#messageModal{{ msg.id }}"><i class="bi bi-eye"></i></button>
+            <form method="post" action="/superadmin/mark_contact_read/{{ msg.id }}" class="d-inline"><button class="btn btn-sm btn-outline-success"><i class="bi bi-check"></i></button></form>
+        </td></tr>
+        <!-- Modal -->
+        <div class="modal fade" id="messageModal{{ msg.id }}" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Message from {{ msg.name }}</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><p><strong>Email:</strong> {{ msg.email }}</p><p><strong>Phone:</strong> {{ msg.phone or 'Not provided' }}</p><p><strong>Subject:</strong> {{ msg.subject }}</p><hr><p>{{ msg.message }}</p><p class="text-muted" style="font-size:0.7rem;">Received: {{ msg.created_at.strftime('%d %b %Y, %H:%M') }}</p></div></div></div></div>
+        {% else %}<tr><td colspan="6" class="text-center text-muted">No contact messages yet.</td></tr>{% endfor %}
+    </tbody></table></div></div>
+
     <!-- Withdrawals -->
     <div class="card p-4 mb-4"><h5><i class="bi bi-cash golden"></i> Withdrawal Requests</h5><div class="table-responsive"><table class="table table-sm"><thead><tr><th>Admin</th><th>Amount</th><th>Phone</th><th>Status</th><th>Action</th></tr></thead><tbody>
         {% for w in withdrawals %}<tr><td>{{ Admin.query.get(w.admin_id).username }}</td><td>KES {{ w.amount|round(2) }}</td><td>{{ w.phone }}</td><td><span class="badge bg-{% if w.status=='paid' %}success{% elif w.status=='pending' %}warning{% else %}danger{% endif %}">{{ w.status|capitalize }}</span></td><td>{% if w.status == 'pending' %}<form method="post" action="/superadmin/withdrawal/{{ w.id }}" class="d-inline"><button name="action" value="approve" class="btn btn-sm btn-success"><i class="bi bi-check"></i></button><button name="action" value="reject" class="btn btn-sm btn-danger"><i class="bi bi-x"></i></button></form>{% elif w.status == 'approved' %}<form method="post" action="/superadmin/withdrawal/{{ w.id }}" class="d-inline"><button name="action" value="paid" class="btn btn-sm btn-primary"><i class="bi bi-check-circle"></i> Mark Paid</button></form>{% else %}-{% endif %}</td></tr>{% else %}<tr><td colspan="5" class="text-center text-muted">No withdrawal requests.</td></tr>{% endfor %}
     </tbody></table></div></div>
+
     <!-- System Controls -->
     <div class="card p-4"><h5><i class="bi bi-gear golden"></i> System Controls</h5><form method="post" action="/superadmin/toggle_maintenance"><div class="d-flex align-items-center"><span class="me-3">Maintenance Mode:</span><button type="submit" class="btn {% if maintenance_mode %}btn-danger{% else %}btn-gold{% endif %}">{% if maintenance_mode %}<i class="bi bi-exclamation-triangle"></i> Turn OFF{% else %}<i class="bi bi-check-circle"></i> Turn ON{% endif %}</button><span class="ms-3 text-muted">{% if maintenance_mode %}⚠️ Site in maintenance mode{% else %}✅ Site is live{% endif %}</span></div></form><hr><p class="text-muted small"><i class="bi bi-info-circle"></i> Fee percentage: {{ fee_percentage }}%</p></div>
     <p class="text-center text-muted mt-4" style="font-size:0.7rem;">© 2026 GoldenVow · Tunza Mila</p>

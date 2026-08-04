@@ -44,6 +44,7 @@
     </div>
 </nav>
 <div class="container mt-4">
+
     <!-- Help Button -->
     <div class="card p-2 mb-3 border border-warning" style="background: #fff8e1;">
         <div class="d-flex justify-content-between align-items-center">
@@ -55,9 +56,16 @@
         </div>
     </div>
 
+    <!-- 🆕 MONITORING MODE NOTE (for Super Admin) -->
+    {% if admin.is_super_admin %}
+    <div class="alert alert-info">
+        <i class="bi bi-eye"></i> You are in <strong>Monitoring Mode</strong>. You can view all events but cannot create or manage them. Go to the <a href="/superadmin" class="alert-link">Super Admin Panel</a> for full system oversight.
+    </div>
+    {% endif %}
+
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h4><i class="bi bi-grid-1x2-fill golden me-2"></i> Dashboard</h4>
-        {% if admin.is_super_admin %}
+        {% if not admin.is_super_admin %}
             <a href="/admin/create" class="btn btn-gold"><i class="bi bi-plus-circle"></i> Create Event</a>
         {% endif %}
     </div>

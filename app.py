@@ -732,6 +732,17 @@ def view_notifications():
     db.session.commit()
     return render_template('notifications.html', admin=admin, notifications=notifications)
 
+# ---------- NOTIFICATION API (FOR TOASTS) ----------
+@app.route('/api/notifications/unread')
+def api_unread_notifications():
+    if not is_admin_logged_in():
+        return jsonify({'count': 0, 'latest': None}), 401
+    admin = get_admin()
+    unread = Notification.query.filter_by(admin_id=admin.id, is_read=False).order_by(desc(Notification.created_at)).all()
+    count = len(unread)
+    latest = unread[0].message if unread else None
+    return jsonify({'count': count, 'latest': latest})
+
 # ---------- PUBLIC ----------
 @app.route('/e/<token>')
 def public_event(token):

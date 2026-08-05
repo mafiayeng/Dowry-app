@@ -24,13 +24,6 @@
             text-align: center;
             position: relative;
         }
-        .hero::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: radial-gradient(circle at 30% 30%, rgba(212, 175, 55, 0.08), transparent 70%);
-            pointer-events: none;
-        }
         .hero-content {
             max-width: 800px;
             position: relative;
@@ -51,11 +44,9 @@
             font-weight: 700;
             color: #D4AF37;
             letter-spacing: 6px;
-            text-shadow: 0 0 60px rgba(212, 175, 55, 0.25);
+            text-shadow: 0 0 60px rgba(212,175,55,0.25);
         }
-        .brand-name span {
-            color: #FEFCF3;
-        }
+        .brand-name span { color: #FEFCF3; }
         .brand-sub {
             font-size: 1.3rem;
             color: #C8B8A8;
@@ -70,7 +61,6 @@
             color: #D4AF37;
             letter-spacing: 4px;
             margin: 15px 0 30px;
-            text-shadow: 0 0 30px rgba(212, 175, 55, 0.15);
         }
         .btn-group-custom .btn {
             padding: 14px 40px;
@@ -84,12 +74,12 @@
             background: #D4AF37;
             border: none;
             color: #1A2A3A;
-            box-shadow: 0 8px 30px rgba(212, 175, 55, 0.3);
+            box-shadow: 0 8px 30px rgba(212,175,55,0.3);
         }
         .btn-gold:hover {
             background: #E5C54A;
             transform: translateY(-3px);
-            box-shadow: 0 12px 40px rgba(212, 175, 55, 0.5);
+            box-shadow: 0 12px 40px rgba(212,175,55,0.5);
         }
         .btn-outline-gold {
             background: transparent;
@@ -100,7 +90,6 @@
             background: #D4AF37;
             color: #1A2A3A;
             transform: translateY(-3px);
-            box-shadow: 0 8px 25px rgba(212, 175, 55, 0.3);
         }
         .features {
             margin-top: 60px;
@@ -113,102 +102,21 @@
             backdrop-filter: blur(12px);
             border-radius: 24px;
             padding: 30px 20px;
-            border: 1px solid rgba(212, 175, 55, 0.12);
+            border: 1px solid rgba(212,175,55,0.12);
             transition: 0.4s;
         }
         .feature-item:hover {
             border-color: #D4AF37;
             transform: translateY(-8px);
             background: rgba(255,255,255,0.10);
-            box-shadow: 0 12px 40px rgba(0,0,0,0.2);
         }
         .feature-item i {
             font-size: 3rem;
             color: #D4AF37;
             margin-bottom: 15px;
         }
-        .feature-item h6 {
-            font-weight: 700;
-            font-size: 1.2rem;
-        }
-        .feature-item p {
-            font-size: 0.9rem;
-            color: #B0A8A0;
-            margin: 0;
-        }
-
-        .section-title {
-            font-family: 'Playfair Display', serif;
-            font-size: 2.5rem;
-            color: #D4AF37;
-            letter-spacing: 2px;
-            margin-bottom: 20px;
-        }
-        .section-sub {
-            font-size: 1.1rem;
-            color: #C8B8A8;
-            max-width: 600px;
-            margin: 0 auto 40px;
-        }
-        .how-it-works {
-            padding: 80px 20px;
-            background: rgba(0,0,0,0.3);
-        }
-        .step-card {
-            background: rgba(255,255,255,0.05);
-            backdrop-filter: blur(8px);
-            border-radius: 20px;
-            padding: 30px 20px;
-            border: 1px solid rgba(212, 175, 55, 0.08);
-            transition: 0.3s;
-            height: 100%;
-        }
-        .step-card:hover {
-            border-color: #D4AF37;
-            transform: translateY(-4px);
-        }
-        .step-number {
-            font-family: 'Playfair Display', serif;
-            font-size: 2.8rem;
-            font-weight: 700;
-            color: #D4AF37;
-            opacity: 0.4;
-            margin-bottom: 10px;
-        }
-        .step-card h5 {
-            font-weight: 700;
-            color: #F0E8DE;
-        }
-        .step-card p {
-            color: #B0A8A0;
-            font-size: 0.95rem;
-        }
-
-        .testimonials {
-            padding: 80px 20px;
-        }
-        .testimonial-card {
-            background: rgba(255,255,255,0.06);
-            backdrop-filter: blur(8px);
-            border-radius: 20px;
-            padding: 25px;
-            border: 1px solid rgba(212, 175, 55, 0.08);
-            transition: 0.3s;
-        }
-        .testimonial-card:hover {
-            border-color: #D4AF37;
-        }
-        .testimonial-card .quote {
-            font-style: italic;
-            color: #C8B8A8;
-            font-size: 1.05rem;
-        }
-        .testimonial-card .author {
-            font-weight: 600;
-            color: #D4AF37;
-            margin-top: 10px;
-        }
-
+        .feature-item h6 { font-weight: 700; font-size: 1.2rem; }
+        .feature-item p { font-size: 0.9rem; color: #B0A8A0; margin: 0; }
         .bg-particles {
             position: fixed;
             top: 0;
@@ -221,7 +129,7 @@
         .bg-particles span {
             position: absolute;
             border-radius: 50%;
-            background: rgba(212, 175, 55, 0.05);
+            background: rgba(212,175,55,0.05);
             animation: floatParticle 25s infinite ease-in-out;
         }
         .bg-particles span:nth-child(1) { width: 400px; height: 400px; top: -100px; left: -100px; }
@@ -233,29 +141,23 @@
             66% { transform: translate(-30px,30px) scale(0.9); opacity: 0.3; }
             100% { transform: translate(0,0) scale(1); opacity: 0.2; }
         }
-
         @media (max-width: 768px) {
             .brand-name { font-size: 3.2rem; letter-spacing: 3px; }
             .brand-sub { font-size: 1rem; letter-spacing: 4px; }
             .motto { font-size: 1.2rem; }
             .btn-group-custom .btn { padding: 12px 24px; font-size: 1rem; }
-            .section-title { font-size: 2rem; }
         }
         @media (max-width: 576px) {
             .brand-name { font-size: 2.5rem; }
-            .brand-sub { font-size: 0.8rem; letter-spacing: 2px; }
+            .brand-sub { font-size: 0.8rem; }
             .motto { font-size: 1rem; }
             .features { grid-template-columns: 1fr 1fr; gap: 15px; }
-            .feature-item { padding: 20px 15px; }
-            .feature-item i { font-size: 2.2rem; }
         }
     </style>
 </head>
 <body>
     <div class="bg-particles"><span></span><span></span><span></span></div>
-
-    <!-- Hero -->
-    <section class="hero">
+    <div class="hero">
         <div class="hero-content">
             <div class="logo-ring">
                 <svg width="130" height="130" viewBox="0 0 130 130">
@@ -277,91 +179,13 @@
                 <a href="/register" class="btn btn-outline-gold"><i class="bi bi-person-plus"></i> Create Account</a>
             </div>
             <div class="features">
-                <div class="feature-item">
-                    <i class="bi bi-heart"></i>
-                    <h6>Love & Tradition</h6>
-                    <p>Honoring cultural values with transparency</p>
-                </div>
-                <div class="feature-item">
-                    <i class="bi bi-shield-lock"></i>
-                    <h6>Secure & Private</h6>
-                    <p>Your contributions are safe and confidential</p>
-                </div>
-                <div class="feature-item">
-                    <i class="bi bi-receipt"></i>
-                    <h6>Instant Receipts</h6>
-                    <p>Professional PDF receipts for every payment</p>
-                </div>
-                <div class="feature-item">
-                    <i class="bi bi-people"></i>
-                    <h6>Community Driven</h6>
-                    <p>Built for Harambee, weddings, and support</p>
-                </div>
+                <div class="feature-item"><i class="bi bi-heart"></i><h6>Love & Tradition</h6><p>Honoring cultural values with transparency</p></div>
+                <div class="feature-item"><i class="bi bi-shield-lock"></i><h6>Secure & Private</h6><p>Your contributions are safe and confidential</p></div>
+                <div class="feature-item"><i class="bi bi-receipt"></i><h6>Instant Receipts</h6><p>Professional PDF receipts for every payment</p></div>
+                <div class="feature-item"><i class="bi bi-people"></i><h6>Community Driven</h6><p>Built for Harambee, weddings, and support</p></div>
             </div>
         </div>
-    </section>
-
-    <!-- How It Works -->
-    <section class="how-it-works">
-        <div class="container text-center">
-            <h2 class="section-title">How It Works</h2>
-            <p class="section-sub">Simple steps to start collecting contributions for your event</p>
-            <div class="row g-4 mt-4">
-                <div class="col-md-4">
-                    <div class="step-card">
-                        <div class="step-number">01</div>
-                        <h5>Create an Event</h5>
-                        <p>Set your goal, deadline, and payment details – all in one place.</p>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="step-card">
-                        <div class="step-number">02</div>
-                        <h5>Share the Link</h5>
-                        <p>Send the unique event link via WhatsApp or SMS to your community.</p>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="step-card">
-                        <div class="step-number">03</div>
-                        <h5>Collect & Track</h5>
-                        <p>Receive contributions, issue receipts, and track progress in real-time.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Testimonials -->
-    <section class="testimonials">
-        <div class="container text-center">
-            <h2 class="section-title">What People Say</h2>
-            <p class="section-sub">Real stories from real users</p>
-            <div class="row g-4 mt-4">
-                <div class="col-md-4">
-                    <div class="testimonial-card">
-                        <div class="quote">“GoldenVow made our dowry collection so organized. No more WhatsApp chaos!”</div>
-                        <div class="author">— Mary, Nairobi</div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="testimonial-card">
-                        <div class="quote">“The receipts are professional and helped us keep track of every contribution.”</div>
-                        <div class="author">— John, Eldoret</div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="testimonial-card">
-                        <div class="quote">“I love the privacy – contributors only see their own amounts. Trust is everything.”</div>
-                        <div class="author">— Sarah, Kisumu</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Footer is provided by base.html, so we don't need another one -->
-
+    </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

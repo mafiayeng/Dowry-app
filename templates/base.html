@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -35,7 +35,7 @@
             </a>
             <div class="d-flex align-items-center gap-2">
                 <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
-                    <span id="themeIcon">🌙</span>
+                    <span id="themeIcon">☀️</span>
                 </button>
                 {% if is_admin_logged_in() %}
                 <a href="/notifications" class="btn btn-sm position-relative me-2">
@@ -93,7 +93,9 @@
             const toggleBtn = document.getElementById('themeToggle');
             const themeIcon = document.getElementById('themeIcon');
             const html = document.documentElement;
-            const savedTheme = localStorage.getItem('theme') || 'light';
+
+            // Load saved theme, default to dark
+            let savedTheme = localStorage.getItem('theme') || 'dark';
             html.setAttribute('data-theme', savedTheme);
             themeIcon.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
 
@@ -104,15 +106,13 @@
                 html.setAttribute('data-theme', next);
                 localStorage.setItem('theme', next);
                 themeIcon.textContent = next === 'dark' ? '☀️' : '🌙';
-                // force reflow for some browsers
+                // force reflow
                 document.body.style.display = 'none';
-                requestAnimationFrame(() => {
-                    document.body.style.display = '';
-                });
+                setTimeout(() => { document.body.style.display = ''; }, 10);
             });
         })();
 
-        // Notification polling (unchanged)
+        // Notification polling
         let lastNotificationCount = 0;
         function fetchNotifications() {
             fetch('/api/notifications/unread')

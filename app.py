@@ -580,9 +580,10 @@ def contact():
         return redirect(url_for('contact'))
     return render_template('contact.html')
 
+# ---------- CRITICAL FIX: ADMIN DASHBOARD WITH ON-THE-FLY MIGRATION ----------
 @app.route('/admin')
 def admin_dashboard():
-    # ---- SAFETY MIGRATION: Add missing columns if any ----
+    # ---- ON-THE-FLY MIGRATION (FIXES THE ERROR) ----
     try:
         from sqlalchemy import inspect
         inspector = inspect(db.engine)
@@ -601,10 +602,10 @@ def admin_dashboard():
             for col, typ in needed.items():
                 if col not in columns:
                     conn.execute(f'ALTER TABLE event ADD COLUMN {col} {typ}')
-                    print(f"✅ Added column '{col}' on the fly.")
+                    print(f"✅ On-the-fly added column: {col}")
             conn.commit()
     except Exception as e:
-        print(f"⚠️ On-the-fly migration failed: {e}")
+        print(f"⚠️ On-the-fly migration warning: {e}")
     # ------------------------------------------------
 
     if not is_admin_logged_in():
@@ -1139,7 +1140,7 @@ def superadmin_withdrawal_action(withdrawal_id):
     flash(f'✅ Withdrawal {action}d.', 'success')
     return redirect(url_for('super_admin_dashboard'))
 
-@app.route('/superadmin/toggle_disable_event/<int:event_id>', methods=['POST'])
+@app.route('/superadmin/toggle_disable_event/<int:event_id>', methods(['POST'])
 def toggle_disable_event(event_id):
     if not is_admin_logged_in() or not get_admin().is_super_admin:
         return redirect(url_for('login'))

@@ -180,14 +180,12 @@ class Setting(db.Model):
 # ---------- CREATE TABLES & SAFE MIGRATION ----------
 with app.app_context():
     db.create_all()
-    # Ensure maintenance setting exists
     if not Setting.query.filter_by(key='maintenance_mode').first():
         setting = Setting(key='maintenance_mode', value='False')
         db.session.add(setting)
         db.session.commit()
         print("✅ Maintenance setting created.")
 
-    # ---- AUTOMATICALLY ADD MISSING COLUMNS ----
     try:
         inspector = inspect(db.engine)
         columns = [col['name'] for col in inspector.get_columns('event')]
@@ -561,7 +559,6 @@ def admin_dashboard():
     admin.last_action = datetime.utcnow()
     db.session.commit()
     events = Event.query.filter_by(admin_id=admin.id).order_by(desc(Event.created_at)).all()
-    # Compute stats
     total_contributors = 0
     total_raised = 0
     pending_approvals = 0
@@ -940,7 +937,7 @@ def weekly_receipt(token):
     c.setFillColorRGB(1,1,1); c.rect(0,0,width,height,fill=1)
     c.setStrokeColorRGB(0.83,0.69,0.22); c.setLineWidth(3); c.rect(40,40,width-80,height-80)
     c.setFillColorRGB(0.83,0.69,0.22); c.setFont("Helvetica-Bold", 24); c.drawString(200, height-80, "✦ GOLDENVOW ✦")
-    c.setFillColorRGB(0.2,0.2,0.2); c.setFont("Helvetica", 12); c.drawString(220, height-100, "kejengana kimoja  · building each other")
+    c.setFillColorRGB(0.2,0.2,0.2); c.setFont("Helvetica", 12); c.drawString(220, height-100, "Tunza Mila · Nurture Tradition")
     c.setFillColorRGB(0,0,0); c.setFont("Helvetica-Bold", 18); c.drawString(50, height-150, event.title)
     c.setFont("Helvetica", 12); c.drawString(50, height-190, f"Contributor: {contrib.name}")
     c.drawString(50, height-210, f"Phone: {contrib.phone}")
@@ -1100,7 +1097,7 @@ def toggle_disable_event(event_id):
     flash(f'✅ Event "{event.title}" has been {status}.', 'success')
     return redirect(url_for('super_admin_dashboard'))
 
-@app.route('/superadmin/delete_event/<int:event_id>', methods(['POST'])
+@app.route('/superadmin/delete_event/<int:event_id>', methods=['POST'])
 def superadmin_delete_event(event_id):
     if not is_admin_logged_in() or not get_admin().is_super_admin:
         return redirect(url_for('login'))

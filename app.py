@@ -17,14 +17,13 @@ from reportlab.lib.pagesizes import A4
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'pL3x9QmW8vN2kR5yTzH7bJ4dF6sA1cX0')
 
-# ---- DATABASE (PostgreSQL preferred, SQLite fallback) ----
 database_url = os.environ.get('DATABASE_URL')
 if database_url:
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
     print("✅ Using PostgreSQL database.")
 else:
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
-    print("⚠️ DATABASE_URL not set. Using SQLite (data will NOT persist across redeploys).")
+    print("⚠️ DATABASE_URL not set. Using SQLite (data will NOT persist).")
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.permanent_session_lifetime = timedelta(days=30)
@@ -386,7 +385,7 @@ def utility_processor():
         now=datetime.utcnow
     )
 
-# ---------- MAINTENANCE FILTER (ONLY SUPER ADMIN BYPASS) ----------
+# ---------- MAINTENANCE FILTER ----------
 @app.before_request
 def check_maintenance():
     if request.endpoint in ['static', 'force_maintenance_off']:
@@ -427,13 +426,13 @@ def register():
         email = request.form['email']
         phone = request.form.get('phone', '')
         if Admin.query.filter_by(username=username).first():
-            flash('⚠️ Username already taken. Please choose another.', 'danger')
+            flash('⚠️ Username already taken.', 'danger')
             return redirect(url_for('register', event_token=event_token))
         if Admin.query.filter_by(email=email).first():
-            flash('⚠️ Email already registered. Please use a different email.', 'danger')
+            flash('⚠️ Email already registered.', 'danger')
             return redirect(url_for('register', event_token=event_token))
         if phone and Admin.query.filter_by(phone=phone).first():
-            flash('⚠️ Phone number already registered. Please use a different number.', 'danger')
+            flash('⚠️ Phone number already registered.', 'danger')
             return redirect(url_for('register', event_token=event_token))
         hashed = hash_password(password)
         is_super = Admin.query.count() == 0
@@ -562,9 +561,23 @@ def admin_dashboard():
     admin.last_action = datetime.utcnow()
     db.session.commit()
     events = Event.query.filter_by(admin_id=admin.id).order_by(desc(Event.created_at)).all()
+    # Compute stats
+    total_contributors = 0
+    total_raised = 0
+    pending_approvals = 0
+    for ev in events:
+        total_contributors += Contributor.query.filter_by(event_id=ev.id).count()
+        total_raised += get_event_total_paid(ev.id)
+        pending_approvals += Contributor.query.filter_by(event_id=ev.id, status='pending').count()
     setting = Setting.query.filter_by(key='maintenance_mode').first()
     maintenance_mode = setting.value == 'True' if setting else False
-    return render_template('admin_dashboard.html', admin=admin, events=events, maintenance_mode=maintenance_mode)
+    return render_template('admin_dashboard.html',
+                         admin=admin,
+                         events=events,
+                         total_contributors=total_contributors,
+                         total_raised=total_raised,
+                         pending_approvals=pending_approvals,
+                         maintenance_mode=maintenance_mode)
 
 @app.route('/admin/create', methods=['GET', 'POST'])
 def admin_create_event():
@@ -728,9 +741,9 @@ def admin_generate_early_receipt(event_id):
         c.drawString(50, y, f"{p.date_paid.strftime('%d %b %Y, %H:%M')} - KES {p.amount}"); y -= 20
     if not payments: c.drawString(50, y, "No payments in this period.")
     y = 70
-    c.setFillColorRGB(0.83,0.69,0.22); c.setFont("Helvetica-Oblique", 12); c.drawString(50, y+30, '"Thank you for being part of this journey. Every contribution matters."')
+    c.setFillColorRGB(0.83,0.69,0.22); c.setFont("Helvetica-Oblique", 12); c.drawString(50, y+30, '"Thank you for being part of this journey."')
     c.setFillColorRGB(0.2,0.2,0.2); c.setFont("Helvetica-Bold", 10); c.drawString(50, y+10, "GoldenVow · Tunza Mila")
-    c.setFillColorRGB(0.5,0.5,0.5); c.setFont("Helvetica", 8); c.drawString(50, y-10, event.super_admin_message or "Sincerely thankful from the Super Admin – building a golden future together.")
+    c.setFillColorRGB(0.5,0.5,0.5); c.setFont("Helvetica", 8); c.drawString(50, y-10, event.super_admin_message or "Sincerely thankful from the Super Admin.")
     c.drawString(50, y-25, "© 2026 GoldenVow · All rights reserved.")
     c.save()
     buffer.seek(0)
@@ -927,7 +940,7 @@ def weekly_receipt(token):
     c.setFillColorRGB(1,1,1); c.rect(0,0,width,height,fill=1)
     c.setStrokeColorRGB(0.83,0.69,0.22); c.setLineWidth(3); c.rect(40,40,width-80,height-80)
     c.setFillColorRGB(0.83,0.69,0.22); c.setFont("Helvetica-Bold", 24); c.drawString(200, height-80, "✦ GOLDENVOW ✦")
-    c.setFillColorRGB(0.2,0.2,0.2); c.setFont("Helvetica", 12); c.drawString(220, height-100, "Tunza Mila · Nurture Tradition")
+    c.setFillColorRGB(0.2,0.2,0.2); c.setFont("Helvetica", 12); c.drawString(220, height-100, "kejengana kimoja  · building each other")
     c.setFillColorRGB(0,0,0); c.setFont("Helvetica-Bold", 18); c.drawString(50, height-150, event.title)
     c.setFont("Helvetica", 12); c.drawString(50, height-190, f"Contributor: {contrib.name}")
     c.drawString(50, height-210, f"Phone: {contrib.phone}")
@@ -945,9 +958,9 @@ def weekly_receipt(token):
         c.drawString(50, y, f"{p.date_paid.strftime('%d %b %Y, %H:%M')} - KES {p.amount}"); y -= 20
     if not payments: c.drawString(50, y, "No payments this week.")
     y = 70
-    c.setFillColorRGB(0.83,0.69,0.22); c.setFont("Helvetica-Oblique", 12); c.drawString(50, y+30, '"Thank you for being part of this journey. Every contribution matters."')
+    c.setFillColorRGB(0.83,0.69,0.22); c.setFont("Helvetica-Oblique", 12); c.drawString(50, y+30, '"Thank you for being part of this journey."')
     c.setFillColorRGB(0.2,0.2,0.2); c.setFont("Helvetica-Bold", 10); c.drawString(50, y+10, "GoldenVow · Tunza Mila")
-    c.setFillColorRGB(0.5,0.5,0.5); c.setFont("Helvetica", 8); c.drawString(50, y-10, event.super_admin_message or "Sincerely thankful from the Super Admin – building a golden future together.")
+    c.setFillColorRGB(0.5,0.5,0.5); c.setFont("Helvetica", 8); c.drawString(50, y-10, event.super_admin_message or "Sincerely thankful from the Super Admin.")
     c.drawString(50, y-25, "© 2026 GoldenVow · All rights reserved.")
     c.save()
     buffer.seek(0)
@@ -960,7 +973,7 @@ def weekly_receipt(token):
 def about():
     return render_template('about.html')
 
-# ---------- PENDING CHECK (CRON) ----------
+# ---------- PENDING CHECK ----------
 @app.route('/check-pending')
 def check_pending():
     secret = request.args.get('secret')
@@ -982,7 +995,7 @@ def check_pending():
         if last_reminder and (datetime.utcnow() - last_reminder.created_at).total_seconds() < 21600:
             continue
         count = len(contributors)
-        msg = f"⏰ You have {count} pending approval{'s' if count>1 else ''} older than 12 hours. Please review them."
+        msg = f"⏰ You have {count} pending approval{'s' if count>1 else ''} older than 12 hours."
         create_notification(admin_id, msg, 'pending_reminder')
         send_email_notification("Pending Approvals Reminder", f"Dear {admin.username},\n\n{msg}\n\nLogin: {request.host_url}admin", admin.email)
     inactive_cutoff = datetime.utcnow() - timedelta(hours=24)
@@ -1087,7 +1100,7 @@ def toggle_disable_event(event_id):
     flash(f'✅ Event "{event.title}" has been {status}.', 'success')
     return redirect(url_for('super_admin_dashboard'))
 
-@app.route('/superadmin/delete_event/<int:event_id>', methods=['POST'])
+@app.route('/superadmin/delete_event/<int:event_id>', methods(['POST'])
 def superadmin_delete_event(event_id):
     if not is_admin_logged_in() or not get_admin().is_super_admin:
         return redirect(url_for('login'))

@@ -386,7 +386,7 @@ def utility_processor():
 # ---------- MAINTENANCE FILTER ----------
 @app.before_request
 def check_maintenance():
-    if request.endpoint in ['static', 'force_maintenance_off']:
+    if request.endpoint in ['static', 'force_maintenance_off', 'run_migration']:
         return
     if is_admin_logged_in() and get_admin().is_super_admin:
         return
@@ -407,6 +407,35 @@ def force_maintenance_off():
         setting.value = 'False'
         db.session.commit()
     return "✅ Maintenance mode has been forced OFF. The app is now accessible."
+
+@app.route('/run-migration')
+def run_migration():
+    secret = request.args.get('secret')
+    if secret != 'c4eB9xQmW8vN2kR5yTzH7bJ4dF6sA1cX0':
+        return "Unauthorized", 401
+    from sqlalchemy import inspect
+    with app.app_context():
+        inspector = inspect(db.engine)
+        columns = [col['name'] for col in inspector.get_columns('event')]
+        needed = {
+            'background_image_url': 'VARCHAR(500)',
+            'grace_period': 'INTEGER',
+            'has_grace_period': 'BOOLEAN',
+            'ended_at': 'TIMESTAMP WITHOUT TIME ZONE',
+            'thank_you_message': 'TEXT',
+            'super_admin_message': 'TEXT',
+            'disabled': 'BOOLEAN',
+            'disabled_reason': 'TEXT'
+        }
+        added = []
+        for col, typ in needed.items():
+            if col not in columns:
+                db.engine.execute(f'ALTER TABLE event ADD COLUMN {col} {typ}')
+                added.append(col)
+        if added:
+            return f"✅ Added columns: {', '.join(added)}"
+        else:
+            return "✅ All columns already exist. No changes made."
 
 @app.route('/maintenance')
 def maintenance():
@@ -553,6 +582,31 @@ def contact():
 
 @app.route('/admin')
 def admin_dashboard():
+    # ---- SAFETY MIGRATION: Add missing columns if any ----
+    try:
+        from sqlalchemy import inspect
+        inspector = inspect(db.engine)
+        columns = [col['name'] for col in inspector.get_columns('event')]
+        needed = {
+            'background_image_url': 'VARCHAR(500)',
+            'grace_period': 'INTEGER',
+            'has_grace_period': 'BOOLEAN',
+            'ended_at': 'TIMESTAMP WITHOUT TIME ZONE',
+            'thank_you_message': 'TEXT',
+            'super_admin_message': 'TEXT',
+            'disabled': 'BOOLEAN',
+            'disabled_reason': 'TEXT'
+        }
+        with db.engine.connect() as conn:
+            for col, typ in needed.items():
+                if col not in columns:
+                    conn.execute(f'ALTER TABLE event ADD COLUMN {col} {typ}')
+                    print(f"✅ Added column '{col}' on the fly.")
+            conn.commit()
+    except Exception as e:
+        print(f"⚠️ On-the-fly migration failed: {e}")
+    # ------------------------------------------------
+
     if not is_admin_logged_in():
         return redirect(url_for('login'))
     admin = get_admin()

@@ -47,7 +47,7 @@ body {
     min-height: 100vh;
 }
 
-/* ===== BUTTONS ===== */
+/* Buttons */
 .btn-gold {
     background: var(--gold);
     border: none;
@@ -78,7 +78,7 @@ body {
     transform: translateY(-3px);
 }
 
-/* ===== CARDS ===== */
+/* Cards */
 .card {
     background: var(--bg-card);
     border: 1px solid var(--border-color);
@@ -92,7 +92,7 @@ body {
     transform: translateY(-4px);
 }
 
-/* ===== NAVBAR ===== */
+/* Navbar */
 .custom-navbar {
     background: var(--bg-navbar);
     backdrop-filter: var(--navbar-blur);
@@ -107,7 +107,7 @@ body {
 }
 .custom-navbar .brand-name span { color: var(--gold); }
 
-/* ===== THEME TOGGLE ===== */
+/* Theme Toggle */
 .theme-toggle {
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
@@ -124,7 +124,7 @@ body {
     color: #1A2A3A;
 }
 
-/* ===== GLASS CARD ===== */
+/* Glass Card */
 .glass-card {
     background: var(--glass-bg);
     backdrop-filter: blur(20px);
@@ -139,7 +139,7 @@ body {
     box-shadow: 0 50px 100px rgba(0,0,0,0.35);
 }
 
-/* ===== FORM CONTROLS ===== */
+/* Form Controls */
 .form-control {
     background: var(--input-bg);
     border: 1px solid var(--border-color);
@@ -156,7 +156,7 @@ body {
     color: var(--text-primary);
 }
 
-/* ===== PROGRESS BAR ===== */
+/* Progress Bar */
 .progress-custom {
     height: 24px;
     border-radius: 12px;
@@ -175,7 +175,7 @@ body {
     justify-content: center;
 }
 
-/* ===== CHAT BOX ===== */
+/* Chat */
 .chat-box {
     height: 200px;
     overflow-y: auto;
@@ -200,7 +200,7 @@ body {
     margin-left: auto;
 }
 
-/* ===== BACKGROUND ANIMATION ===== */
+/* Background Animation */
 .bg-animation {
     position: fixed;
     top: 0;
@@ -227,7 +227,6 @@ body {
     100% { transform: translate(0, 0) scale(1); opacity: 0.3; }
 }
 
-/* ===== RESPONSIVE ===== */
 @media (max-width: 576px) {
     .glass-card { padding: 30px 20px; }
     .custom-navbar .brand-name { font-size: 1.5rem; }
